@@ -13,7 +13,28 @@ struct HttpResponseWrapper {
 
     // res.onData(JS function)
     // res.onAborted
-    // res.onWritable
+
+    /* Returns the current write offset */
+    template <bool SSL>
+    static void res_getWriteOffset(const FunctionCallbackInfo<Value> &args) {
+        args.GetReturnValue().Set(Integer::New(isolate, getHttpResponse<SSL>(args)->getWriteOffset()));
+    }
+
+    /* Takes function of bool(int), returns this */
+    template <bool SSL>
+    static void res_onWritable(const FunctionCallbackInfo<Value> &args) {
+        /* This thing perfectly fits in with unique_function, and will Reset on destructor */
+        UniquePersistent<Function> p(isolate, Local<Function>::Cast(args[0]));
+
+        getHttpResponse<SSL>(args)->onWritable([p = std::move(p)](int offset) {
+            HandleScope hs(isolate);
+
+            Local<Value> argv[] = {Integer::NewFromUnsigned(isolate, offset)};
+            return Local<Function>::New(isolate, p)->Call(isolate->GetCurrentContext()->Global(), 1, argv)->BooleanValue();
+        });
+
+        args.GetReturnValue().Set(args.Holder());
+    }
 
     /* Takes string or arraybuffer, returns this */
     template <bool SSL>
@@ -84,6 +105,9 @@ struct HttpResponseWrapper {
         resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "tryEnd"), FunctionTemplate::New(isolate, res_tryEnd<SSL>));
         resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "write"), FunctionTemplate::New(isolate, res_write<SSL>));
         resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "writeHeader"), FunctionTemplate::New(isolate, res_writeHeader<SSL>));
+
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "getWriteOffset"), FunctionTemplate::New(isolate, res_getWriteOffset<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "onWritable"), FunctionTemplate::New(isolate, res_onWritable<SSL>));
 
         /* Create our template */
         Local<Object> resObjectLocal = resTemplateLocal->GetFunction()->NewInstance(isolate->GetCurrentContext()).ToLocalChecked();
