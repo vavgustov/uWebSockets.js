@@ -3,51 +3,81 @@
 #include "Utilities.h"
 using namespace v8;
 
+/* todo: probably isCorked, cork should be exposed? */
+
 struct WebSocketWrapper {
     static Persistent<Object> wsTemplate[2];
 
     template <bool SSL>
     static inline uWS::WebSocket<SSL, true> *getWebSocket(const FunctionCallbackInfo<Value> &args) {
-        return ((uWS::WebSocket<SSL, true> *) args.Holder()->GetAlignedPointerFromInternalField(0));
+        auto *ws = (uWS::WebSocket<SSL, true> *) args.Holder()->GetAlignedPointerFromInternalField(0);
+        if (!ws) {
+            args.GetReturnValue().Set(isolate->ThrowException(String::NewFromUtf8(isolate, "Invalid access of closed uWS.WebSocket/SSLWebSocket.")));
+        }
+        return ws;
+    }
+
+    static inline void invalidateWsObject(const FunctionCallbackInfo<Value> &args) {
+        args.Holder()->SetAlignedPointerInInternalField(0, nullptr);
+    }
+
+    /* It would make sense to call terminate "close" and call close "end" to line up with HTTP */
+    /* That also makes sense seince close takes message and code -> you can end with a string message */
+
+    /* Takes nothing returns nothing */
+    template <bool SSL>
+    static void uWS_WebSocket_close(const FunctionCallbackInfo<Value> &args) {
+        auto *ws = getWebSocket<SSL>(args);
+        if (ws) {
+            invalidateWsObject(args);
+            ws->close();
+        }
     }
 
     /* Takes code, message, returns undefined */
     template <bool SSL>
-    static void uWS_WebSocket_close(const FunctionCallbackInfo<Value> &args) {
-        int code = 0;
-        std::string_view message;
+    static void uWS_WebSocket_end(const FunctionCallbackInfo<Value> &args) {
+        auto *ws = getWebSocket<SSL>(args);
+        if (ws) {
+            int code = 0;
+            if (args.Length() >= 1) {
+                code = args[0]->Uint32Value();
+            }
 
-        if (args.Length() >= 1) {
-            code = args[0]->Uint32Value();
+            NativeString message(args.GetIsolate(), args[1]);
+            if (message.isInvalid(args)) {
+                return;
+            }
+
+            invalidateWsObject(args);
+            ws->end(code, message.getString());
         }
-
-        if (args.Length() >= 2) {
-            NativeString nativeString(args.GetIsolate(), args[1]);
-            message = {nativeString.getData(), nativeString.getLength()};
-        }
-
-        getWebSocket<SSL>(args)->close(code, message);
     }
 
     /* Takes nothing, returns integer */
     template <bool SSL>
     static void uWS_WebSocket_getBufferedAmount(const FunctionCallbackInfo<Value> &args) {
-        int bufferedAmount = getWebSocket<SSL>(args)->getBufferedAmount();
-        args.GetReturnValue().Set(Integer::New(isolate, bufferedAmount));
+        auto *ws = getWebSocket<SSL>(args);
+        if (ws) {
+            int bufferedAmount = ws->getBufferedAmount();
+            args.GetReturnValue().Set(Integer::New(isolate, bufferedAmount));
+        }
     }
 
     /* Takes message, isBinary. Returns true on success, false otherwise */
     template <bool SSL>
     static void uWS_WebSocket_send(const FunctionCallbackInfo<Value> &args) {
-        NativeString nativeString(args.GetIsolate(), args[0]);
+        auto *ws = getWebSocket<SSL>(args);
+        if (ws) {
+            NativeString message(args.GetIsolate(), args[0]);
+            if (message.isInvalid(args)) {
+                return;
+            }
 
-        bool isBinary = args[1]->BooleanValue();
+            bool ok = ws->send(message.getString(), args[1]->BooleanValue() ? uWS::OpCode::BINARY : uWS::OpCode::TEXT);
 
-        bool ok = getWebSocket<SSL>(args)->send(
-                    std::string_view(nativeString.getData(), nativeString.getLength()), isBinary ? uWS::OpCode::BINARY : uWS::OpCode::TEXT
-                    );
-
-        args.GetReturnValue().Set(Boolean::New(isolate, ok));
+            args.GetReturnValue().Set(Boolean::New(isolate, ok));
+        }
     }
 
     template <bool SSL>
@@ -62,6 +92,7 @@ struct WebSocketWrapper {
 
         /* Register our functions */
         wsTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "send"), FunctionTemplate::New(isolate, uWS_WebSocket_send<SSL>));
+        wsTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "end"), FunctionTemplate::New(isolate, uWS_WebSocket_end<SSL>));
         wsTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "close"), FunctionTemplate::New(isolate, uWS_WebSocket_close<SSL>));
         wsTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "getBufferedAmount"), FunctionTemplate::New(isolate, uWS_WebSocket_getBufferedAmount<SSL>));
 
