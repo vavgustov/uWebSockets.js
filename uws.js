@@ -1,5 +1,6 @@
 /*
- * Copyright 2018 Alex Hultman and contributors.
+ * Authored by Alex Hultman, 2018-2019.
+ * Intellectual property of third-party.
 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +18,20 @@
 module.exports = (() => {
 	try {
 		const uWS = require(`./uws_${process.platform}_${process.versions.modules}.node`);
-		/* We are not compatible with Node.js domain */
-		process.nextTick = (f, ...args) => uWS.nextTick(f.apply(...args));
+		/* We are not compatible with Node.js nextTick and/or domains */
+		process.nextTick = (f, ...args) => {
+			uWS.nextTick(() => {
+				f(...args);
+			});
+		};
+		process.on('beforeExit', () => {
+			if (uWS.processNextTickQueue()) {
+				setImmediate(() => {
+
+				});
+			}
+		});
+		/* process.nextTick = setImmediate; */
 		return uWS;
 	} catch (e) {
 		throw new Error('This version of µWS is not compatible with your Node.js build.\n\n' + e.toString());
