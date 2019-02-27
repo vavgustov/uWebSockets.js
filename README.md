@@ -3,35 +3,58 @@
 
 *µWebSockets™ (it's "[micro](https://en.wikipedia.org/wiki/Micro-)") is simple, secure & standards compliant web I/O for the most demanding*<sup>[[1]](https://github.com/uNetworking/uWebSockets/tree/master/benchmarks)</sup> *of applications.*
 
-• [Read more (redirects to C++ project)](https://github.com/uNetworking/uWebSockets/blob/master/misc/READMORE.md)
+• [TypeScript docs](https://unetworking.github.io/uWebSockets.js/generated/) • [Read more & user manual (C++ project)](https://github.com/uNetworking/uWebSockets/blob/master/misc/READMORE.md)
 
 </div>
 
+### Outrun. Everyone.
+This project is not your typical "web framework" à la 500 lines of JavaScript and a fancy logo. No, you're looking at a three part software suite of ~7k lines of C & C++, working in unison with Google V8 to bring you one of the most memory scalable and performant I/O scripting environments available.
 
-### For Node.js / NPM users
-While not physically hosted by NPM, it's still possible to install using NPM tools like so ([npm docs](https://docs.npmjs.com/cli/install)):
+It runs 15x faster than Deno and scales to millions of connections using less than half a GB of user space memory.
+
+[Read the release post](https://levelup.gitconnected.com/will-node-js-forever-be-the-sluggish-golang-f632130e5c7a) and/or the [1 million WebSockets post](https://medium.com/@alexhultman/millions-of-active-websockets-with-node-js-7dc575746a01).
+
+### No compiler needed.
+We use AppVeyor & TravisCI to automatically pre-compile binaries for Linux, macOS and Windows with every push. New releases are tagged from branch `binaries` and can be installed [using NPM](https://docs.npmjs.com/cli/install) like so:
 
 ```
-npm install uNetworking/uWebSockets.js#v15.1.0
+npm install uNetworking/uWebSockets.js#v15.2.0
 ```
 
-This project is a Google V8 (Node.js or not) web server built to be efficient and stable. It makes use of µWebSockets, the C++ project, and exposes its features to JavaScript developers. This includes mainly Http & WebSockets, SSL and non-SSL. Prominent users include bitfinex.com, they run ther trading APIs on this server.
+where `v15.2.0` is the particular Git tag you wanted to use.
 
-##### In a nutshell
+### In a nutshell
+There are tons of [examples](examples) but here's the gist of it all:
+
 ```javascript
-const uWS = require('uWebSockets.js');
-const port = 3000;
+const uWS = require('../dist/uws.js');
+const port = 9001;
 
-uWS.SSLApp({
-  /* cert, key and such specified here, or use uWS.App */
-}).get('/whatsmyuseragent', (res, req) => {
-  res.writeHeader(
-    'content-type', 'text/html; charset= utf-8'
-  ).end(
-    'Your user agent is: ' + req.getHeader('user-agent')
-  );
-}).get('/*', (res, req) => {
-  res.end('Wildcard route');
+const app = uWS.SSLApp({
+  key_file_name: 'misc/key.pem',
+  cert_file_name: 'misc/cert.pem',
+  passphrase: '1234'
+}).ws('/*', {
+  /* Options */
+  compression: 0,
+  maxPayloadLength: 16 * 1024 * 1024,
+  idleTimeout: 10,
+  /* Handlers */
+  open: (ws, req) => {
+    console.log('A WebSocket connected via URL: ' + req.getUrl() + '!');
+  },
+  message: (ws, message, isBinary) => {
+    /* Ok is false if backpressure was built up, wait for drain */
+    let ok = ws.send(message, isBinary);
+  },
+  drain: (ws) => {
+    console.log('WebSocket backpressure: ' + ws.getBufferedAmount());
+  },
+  close: (ws, code, message) => {
+    console.log('WebSocket closed');
+  }
+}).any('/*', (res, req) => {
+  res.end('Nothing to see here!');
 }).listen(port, (token) => {
   if (token) {
     console.log('Listening to port ' + port);
@@ -46,12 +69,15 @@ Proper streaming of huge data is supported over Http/Https and demonstrated with
 
 ![](misc/streaming.png)
 
-### Benchmarks
-Performance retention is about 65% that of the native C++ [µWebSockets](https://github.com/uNetworking/uWebSockets) v0.15. That makes it some 20x as fast as Deno and even faster than most C++-only servers, all from within a JavaScript VM.
+### Pub/sub
+WIP section --
 
-Http | WebSockets
---- | ---
-![](https://github.com/uNetworking/uWebSockets/blob/master/misc/bigshot_lineup.png) | ![](https://github.com/uNetworking/uWebSockets/blob/master/misc/websocket_lineup.png)
+### Benchmarks
+In the following charts "µWS v0.15" denote the C++ project - performance retention for µWebSockets.js inside of V8 is about 65-75%, similar to or above the top performing Golang modules. User space memory usage for a million WebSockets is in the 100-400mb range.
+
+Http | WebSockets | PubSub
+--- | --- | ---
+![](https://github.com/uNetworking/uWebSockets/blob/master/misc/bigshot_lineup.png) | ![](https://github.com/uNetworking/uWebSockets/blob/master/misc/websocket_lineup.png) | todo: Socket.IO, SocketCluster, ClusterWS
 
 ### Build from source
 #### Recursively clone, and enter, this repo:
@@ -59,7 +85,7 @@ Http | WebSockets
 git clone --recursive https://github.com/uNetworking/uWebSockets.js.git
 cd uWebSockets.js
 ```
-#### For Unix (Linux, macOS):
+#### For Unix (Linux, macOS, FreeBSD):
 ```
 make
 ```
