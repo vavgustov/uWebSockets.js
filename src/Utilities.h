@@ -22,8 +22,8 @@ public:
         } else if (value->IsTypedArray()) {
             Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(value);
             ArrayBuffer::Contents contents = arrayBufferView->Buffer()->GetContents();
-            length = contents.ByteLength();
-            data = (char *) contents.Data();
+            length = arrayBufferView->ByteLength();
+            data = (char *) contents.Data() + arrayBufferView->ByteOffset();
         } else if (value->IsArrayBuffer()) {
             Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(value);
             ArrayBuffer::Contents contents = arrayBuffer->GetContents();
