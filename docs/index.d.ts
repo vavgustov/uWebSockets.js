@@ -91,6 +91,8 @@ interface HttpRequest {
     getMethod() : string;
     /** Returns the part of URL after ? sign or empty string. */
     getQuery() : string;
+    /** Loops over all headers. */
+    forEach(cb: (key: string, value: string) => void) : void;
 }
 
 /** A structure holding settings and handlers for a WebSocket route handler. */
@@ -117,6 +119,8 @@ interface AppOptions {
     cert_file_name?: RecognizedString;
     passphrase?: RecognizedString;
     dh_params_file_name?: RecognizedString;
+    /** This translates to SSL_MODE_RELEASE_BUFFERS */
+    ssl_prefer_low_memory_usage?: boolean;
 }
 
 /** TemplatedApp is either an SSL or non-SSL app. */

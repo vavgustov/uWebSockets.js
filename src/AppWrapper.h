@@ -20,7 +20,7 @@ void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
     UniquePersistent<Function> closePf;
 
     struct PerSocketData {
-        Persistent<Object> *socketPf;
+        UniquePersistent<Object> *socketPf;
     };
 
     /* Get the behavior object */
@@ -60,7 +60,7 @@ void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
 
         /* Attach a new V8 object with pointer to us, to us */
         PerSocketData *perSocketData = (PerSocketData *) ws->getUserData();
-        perSocketData->socketPf = new Persistent<Object>;
+        perSocketData->socketPf = new UniquePersistent<Object>;
         perSocketData->socketPf->Reset(isolate, wsObject);
 
         Local<Function> openLf = Local<Function>::New(isolate, openPf);
@@ -265,6 +265,9 @@ void uWS_App(const FunctionCallbackInfo<Value> &args) {
                 dhParamsFileName.append(dhParamsFileNameValue.getString());
                 ssl_options.dh_params_file_name = dhParamsFileName.c_str();
             }
+
+            /* ssl_prefer_low_memory_usage */
+            ssl_options.ssl_prefer_low_memory_usage = Local<Object>::Cast(args[0])->Get(String::NewFromUtf8(isolate, "ssl_prefer_low_memory_usage"))->BooleanValue();
         }
 
         app = new APP(ssl_options);
