@@ -62,19 +62,19 @@ void Main(Local<Object> exports) {
 
     /* We want this so that we can redefine process.nextTick to using the V8 native microtask queue */
     // todo: setting this might be crashing nodejs?
-    // isolate->SetMicrotasksPolicy(MicrotasksPolicy::kAuto);
+    isolate->SetMicrotasksPolicy(MicrotasksPolicy::kAuto);
 
     /* Integrate with existing libuv loop, we just pass a boolean basically */
     uWS::Loop::get((void *) 1);
 
     // instead, for now we call this manually like before:
-    uWS::Loop::get()->setPostHandler([](uWS::Loop *) {
+    /*uWS::Loop::get()->setPostHandler([](uWS::Loop *) {
         isolate->RunMicrotasks();
     });
 
     uWS::Loop::get()->setPreHandler([](uWS::Loop *) {
         isolate->RunMicrotasks();
-    });
+    });*/
 
     /* uWS namespace */
     exports->Set(String::NewFromUtf8(isolate, "App"), FunctionTemplate::New(isolate, uWS_App<uWS::App>)->GetFunction());
@@ -88,6 +88,9 @@ void Main(Local<Object> exports) {
     exports->Set(String::NewFromUtf8(isolate, "DISABLED"), Integer::NewFromUnsigned(isolate, uWS::DISABLED));
     exports->Set(String::NewFromUtf8(isolate, "SHARED_COMPRESSOR"), Integer::NewFromUnsigned(isolate, uWS::SHARED_COMPRESSOR));
     exports->Set(String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR"), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR));
+
+    /* Listen options */
+    exports->Set(String::NewFromUtf8(isolate, "LIBUS_LISTEN_EXCLUSIVE_PORT"), Integer::NewFromUnsigned(isolate, LIBUS_LISTEN_EXCLUSIVE_PORT));
 
     /* The template for websockets */
     WebSocketWrapper::initWsTemplate<0>();
