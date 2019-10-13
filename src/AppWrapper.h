@@ -7,6 +7,7 @@ using namespace v8;
 template <typename APP>
 void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
     APP *app = (APP *) args.Holder()->GetAlignedPointerFromInternalField(0);
+    /* This one is default constructed with defaults */
     typename APP::WebSocketBehavior behavior = {};
 
     NativeString pattern(args.GetIsolate(), args[0]);
@@ -27,14 +28,29 @@ void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
     if (args.Length() == 2) {
         Local<Object> behaviorObject = Local<Object>::Cast(args[1]);
 
-        /* maxPayloadLength */
-        behavior.maxPayloadLength = behaviorObject->Get(String::NewFromUtf8(isolate, "maxPayloadLength"))->Int32Value(isolate->GetCurrentContext()).ToChecked();
+        /* maxPayloadLength or default */
+        MaybeLocal<Value> maybeMaxPayloadLength = behaviorObject->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "maxPayloadLength"));
+        if (!maybeMaxPayloadLength.IsEmpty() && !maybeMaxPayloadLength.ToLocalChecked()->IsUndefined()) {
+            behavior.maxPayloadLength = maybeMaxPayloadLength.ToLocalChecked()->Int32Value(isolate->GetCurrentContext()).ToChecked();
+        }
 
-        /* idleTimeout */
-        behavior.idleTimeout = behaviorObject->Get(String::NewFromUtf8(isolate, "idleTimeout"))->Int32Value(isolate->GetCurrentContext()).ToChecked();
+        /* idleTimeout or default */
+        MaybeLocal<Value> maybeIdleTimeout = behaviorObject->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "idleTimeout"));
+        if (!maybeIdleTimeout.IsEmpty() && !maybeIdleTimeout.ToLocalChecked()->IsUndefined()) {
+            behavior.idleTimeout = maybeIdleTimeout.ToLocalChecked()->Int32Value(isolate->GetCurrentContext()).ToChecked();
+        }
 
-        /* Compression, map from 0, 1, 2 to disabled, shared, dedicated. This is actually the enum */
-        behavior.compression = (uWS::CompressOptions) behaviorObject->Get(String::NewFromUtf8(isolate, "compression"))->Int32Value(isolate->GetCurrentContext()).ToChecked();
+        /* Compression or default, map from 0, 1, 2 to disabled, shared, dedicated. This is actually the enum */
+        MaybeLocal<Value> maybeCompression = behaviorObject->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "compression"));
+        if (!maybeCompression.IsEmpty() && !maybeCompression.ToLocalChecked()->IsUndefined()) {
+            behavior.compression = (uWS::CompressOptions) maybeCompression.ToLocalChecked()->Int32Value(isolate->GetCurrentContext()).ToChecked();
+        }
+
+        /* maxBackpressure or default */
+        MaybeLocal<Value> maybeMaxBackpressure = behaviorObject->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "maxBackpressure"));
+        if (!maybeMaxBackpressure.IsEmpty() && !maybeMaxBackpressure.ToLocalChecked()->IsUndefined()) {
+            behavior.maxBackpressure = maybeMaxBackpressure.ToLocalChecked()->Int32Value(isolate->GetCurrentContext()).ToChecked();
+        }
 
         /* Open */
         openPf.Reset(args.GetIsolate(), Local<Function>::Cast(behaviorObject->Get(String::NewFromUtf8(isolate, "open"))));
@@ -66,7 +82,7 @@ void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
         Local<Function> openLf = Local<Function>::New(isolate, openPf);
         if (!openLf->IsUndefined()) {
             Local<Value> argv[] = {wsObject, reqObject};
-            openLf->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 2, argv);
+            openLf->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 2, argv).IsEmpty();
         }
     };
 
@@ -81,7 +97,7 @@ void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
             Local<Value> argv[3] = {Local<Object>::New(isolate, *(perSocketData->socketPf)),
                                     messageArrayBuffer,
                                     Boolean::New(isolate, opCode == uWS::OpCode::BINARY)};
-            Local<Function>::New(isolate, messagePf)->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 3, argv);
+            Local<Function>::New(isolate, messagePf)->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 3, argv).IsEmpty();
 
             /* Important: we clear the ArrayBuffer to make sure it is not invalidly used after return */
             messageArrayBuffer->Neuter();
@@ -96,7 +112,7 @@ void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
             PerSocketData *perSocketData = (PerSocketData *) ws->getUserData();
             Local<Value> argv[1] = {Local<Object>::New(isolate, *(perSocketData->socketPf))
                                     };
-            Local<Function>::New(isolate, drainPf)->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 1, argv);
+            Local<Function>::New(isolate, drainPf)->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 1, argv).IsEmpty();
         };
     }
 
@@ -124,7 +140,7 @@ void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
         Local<Function> closeLf = Local<Function>::New(isolate, closePf);
         if (!closeLf->IsUndefined()) {
             Local<Value> argv[3] = {wsObject, Integer::New(isolate, code), messageArrayBuffer};
-            closeLf->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 3, argv);
+            closeLf->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 3, argv).IsEmpty();
         }
 
         delete perSocketData->socketPf;
@@ -163,7 +179,7 @@ void uWS_App_get(F f, const FunctionCallbackInfo<Value> &args) {
         reqObject->SetAlignedPointerInInternalField(0, req);
 
         Local<Value> argv[] = {resObject, reqObject};
-        Local<Function>::New(isolate, *pf)->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 2, argv);
+        Local<Function>::New(isolate, *pf)->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 2, argv).IsEmpty();
 
         /* Properly invalidate req */
         reqObject->SetAlignedPointerInInternalField(0, nullptr);
@@ -190,7 +206,7 @@ void uWS_App_listen(const FunctionCallbackInfo<Value> &args) {
     auto cb = [&args](auto *token) {
         /* Return a false boolean if listen failed */
         Local<Value> argv[] = {token ? Local<Value>::Cast(External::New(isolate, token)) : Local<Value>::Cast(Boolean::New(isolate, false))};
-        Local<Function>::Cast(args[args.Length() - 1])->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 1, argv);
+        Local<Function>::Cast(args[args.Length() - 1])->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 1, argv).IsEmpty();
     };
 
     /* Host is first, if present */
