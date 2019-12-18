@@ -67,7 +67,7 @@ interface HttpResponse {
      * to it immediately inside of the callback. Returning from an Http request handler
      * without attaching (by calling onAborted) an abort handler is ill-use and will termiante.
      * When this event emits, the response has been aborted and may not be used. */
-    onAborted(handler: (res: HttpResponse) => void) : HttpResponse;
+    onAborted(handler: () => void) : HttpResponse;
 
     /** Handler for reading data from POST and such requests. You MUST copy the data of chunk if isLast is not true. We Neuter ArrayBuffers on return, making it zero length.*/
     onData(handler: (chunk: ArrayBuffer, isLast: boolean) => void) : HttpResponse;
@@ -153,6 +153,8 @@ interface TemplatedApp {
     any(pattern: RecognizedString, handler: (res: HttpResponse, req: HttpRequest) => void) : TemplatedApp;
     /** Registers a handler matching specified URL pattern where WebSocket upgrade requests are caught. */
     ws(pattern: RecognizedString, behavior: WebSocketBehavior) : TemplatedApp;
+    /** Publishes a message under topic, for all WebSockets under this app. See WebSocket.publish. */
+    publish(topic: RecognizedString, message: RecognizedString, isBinary?: boolean, compress?: boolean) : TemplatedApp;
 }
 
 /** Constructs a non-SSL app */
@@ -165,11 +167,10 @@ export function SSLApp(options: AppOptions): TemplatedApp;
 export function us_listen_socket_close(listenSocket: us_listen_socket): void;
 
 /** WebSocket compression options */
-export enum CompressOptions {
-    /** No compression (always a good idea) */
-    DISABLED,
-    /** Zero memory overhead compression (recommended) */
-    SHARED_COMPRESSOR,
-    /** Sliding dedicated compress window, requires lots of memory per socket */
-    DEDICATED_COMPRESSOR
-}
+export type CompressOptions = number;
+/** No compression (always a good idea) */
+export var DISABLED: CompressOptions;
+/** Zero memory overhead compression (recommended) */
+export var SHARED_COMPRESSOR: CompressOptions;
+/** Sliding dedicated compress window, requires lots of memory per socket */
+export var DEDICATED_COMPRESSOR: CompressOptions;
