@@ -1,25 +1,25 @@
 /* Under construction, lots of things to add */
 
 /** Native type representing a raw uSockets struct us_listen_socket. */
-interface us_listen_socket {
+export interface us_listen_socket {
 
 }
 
 /** Recognized string types, things C++ can read and understand as strings */
-type RecognizedString = string | ArrayBuffer | Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32Array | Int32Array | Float32Array | Float64Array;
+export type RecognizedString = string | ArrayBuffer | Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32Array | Int32Array | Float32Array | Float64Array;
 
 /** A WebSocket connection that is valid from open to close event */
-interface WebSocket {
+export interface WebSocket {
     /** Sends a message. Make sure to check getBufferedAmount() before sending. Returns true for success, false for built up backpressure that will drain when time is given. */
     send(message: RecognizedString, isBinary?: boolean, compress?: boolean) : boolean;
 
     /** Returns the bytes buffered in backpressure. */
     getBufferedAmount() : number;
 
-    /** Gradefully closes this WebSocket. Immediately calls close handler. */
+    /** Gracefully closes this WebSocket. Immediately calls close handler. */
     end(code?: number, shortMessage?: RecognizedString) : WebSocket;
 
-    /** Forefully closes this WebSocket. Immediately calls close handler. */
+    /** Forcefully closes this WebSocket */
     close() : WebSocket;
 
     /** Subscribe to a topic in MQTT syntax */
@@ -39,7 +39,7 @@ interface WebSocket {
 }
 
 /** An HttpResponse is valid until either onAborted callback or any of the .end/.tryEnd calls succeed. You may attach user data to this object. */
-interface HttpResponse {
+export interface HttpResponse {
     /** Writes the HTTP status message such as "200 OK". */
     writeStatus(status: RecognizedString) : HttpResponse;
     /** Writes key and value to HTTP response. */
@@ -67,7 +67,7 @@ interface HttpResponse {
      * to it immediately inside of the callback. Returning from an Http request handler
      * without attaching (by calling onAborted) an abort handler is ill-use and will termiante.
      * When this event emits, the response has been aborted and may not be used. */
-    onAborted(handler: (res: HttpResponse) => void) : HttpResponse;
+    onAborted(handler: () => void) : HttpResponse;
 
     /** Handler for reading data from POST and such requests. You MUST copy the data of chunk if isLast is not true. We Neuter ArrayBuffers on return, making it zero length.*/
     onData(handler: (chunk: ArrayBuffer, isLast: boolean) => void) : HttpResponse;
@@ -80,7 +80,7 @@ interface HttpResponse {
 }
 
 /** An HttpRequest is stack allocated and only accessible during the callback invocation. */
-interface HttpRequest {
+export interface HttpRequest {
     /** Returns the lowercased header value or empty string. */
     getHeader(lowerCaseKey: RecognizedString) : string;
     /** Returns the parsed parameter at index. Corresponds to route. */
@@ -96,7 +96,7 @@ interface HttpRequest {
 }
 
 /** A structure holding settings and handlers for a WebSocket route handler. */
-interface WebSocketBehavior {
+export interface WebSocketBehavior {
     /** Maximum length of received message. */
     maxPayloadLength?: number;
     /** Maximum amount of seconds that may pass without sending or getting a message. */
@@ -116,7 +116,7 @@ interface WebSocketBehavior {
 }
 
 /** Options used when constructing an app. */
-interface AppOptions {
+export interface AppOptions {
     key_file_name?: RecognizedString;
     cert_file_name?: RecognizedString;
     passphrase?: RecognizedString;
@@ -126,7 +126,7 @@ interface AppOptions {
 }
 
 /** TemplatedApp is either an SSL or non-SSL app. */
-interface TemplatedApp {
+export interface TemplatedApp {
     /** Listens to hostname & port. Callback hands either false or a listen socket. */
     listen(host: RecognizedString, port: number, cb: (listenSocket: us_listen_socket) => void): TemplatedApp;
     /** Listens to port. Callback hands either false or a listen socket. */
@@ -153,6 +153,8 @@ interface TemplatedApp {
     any(pattern: RecognizedString, handler: (res: HttpResponse, req: HttpRequest) => void) : TemplatedApp;
     /** Registers a handler matching specified URL pattern where WebSocket upgrade requests are caught. */
     ws(pattern: RecognizedString, behavior: WebSocketBehavior) : TemplatedApp;
+    /** Publishes a message under topic, for all WebSockets under this app. See WebSocket.publish. */
+    publish(topic: RecognizedString, message: RecognizedString, isBinary?: boolean, compress?: boolean) : TemplatedApp;
 }
 
 /** Constructs a non-SSL app */
@@ -165,11 +167,10 @@ export function SSLApp(options: AppOptions): TemplatedApp;
 export function us_listen_socket_close(listenSocket: us_listen_socket): void;
 
 /** WebSocket compression options */
-export enum CompressOptions {
-    /** No compression (always a good idea) */
-    DISABLED,
-    /** Zero memory overhead compression (recommended) */
-    SHARED_COMPRESSOR,
-    /** Sliding dedicated compress window, requires lots of memory per socket */
-    DEDICATED_COMPRESSOR
-}
+export type CompressOptions = number;
+/** No compression (always a good idea) */
+export var DISABLED: CompressOptions;
+/** Zero memory overhead compression (recommended) */
+export var SHARED_COMPRESSOR: CompressOptions;
+/** Sliding dedicated compress window, requires lots of memory per socket */
+export var DEDICATED_COMPRESSOR: CompressOptions;

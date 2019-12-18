@@ -1,16 +1,17 @@
 #include "App.h"
-#include <v8.h>
 #include "Utilities.h"
+
+#include <v8.h>
 using namespace v8;
 
 struct HttpResponseWrapper {
-    static Persistent<Object> resTemplate[2];
 
     template <bool SSL>
     static inline uWS::HttpResponse<SSL> *getHttpResponse(const FunctionCallbackInfo<Value> &args) {
+        Isolate *isolate = args.GetIsolate();
         auto *res = (uWS::HttpResponse<SSL> *) args.Holder()->GetAlignedPointerFromInternalField(0);
         if (!res) {
-            args.GetReturnValue().Set(isolate->ThrowException(String::NewFromUtf8(isolate, "Invalid access of discarded (invalid, deleted) uWS.HttpResponse/SSLHttpResponse.")));
+            args.GetReturnValue().Set(isolate->ThrowException(String::NewFromUtf8(isolate, "Invalid access of discarded (invalid, deleted) uWS.HttpResponse/SSLHttpResponse.", NewStringType::kNormal).ToLocalChecked()));
         }
         return res;
     }
@@ -34,12 +35,13 @@ struct HttpResponseWrapper {
     /* Takes function of data and isLast. Expects nothing from callback, returns this */
     template <bool SSL>
     static void res_onData(const FunctionCallbackInfo<Value> &args) {
+        Isolate *isolate = args.GetIsolate();
         auto *res = getHttpResponse<SSL>(args);
         if (res) {
             /* This thing perfectly fits in with unique_function, and will Reset on destructor */
             UniquePersistent<Function> p(isolate, Local<Function>::Cast(args[0]));
 
-            res->onData([p = std::move(p)](std::string_view data, bool last) {
+            res->onData([p = std::move(p), isolate](std::string_view data, bool last) {
                 HandleScope hs(isolate);
 
                 Local<ArrayBuffer> dataArrayBuffer = ArrayBuffer::New(isolate, (void *) data.data(), data.length());
@@ -57,6 +59,7 @@ struct HttpResponseWrapper {
     /* Takes nothing, returns nothing. Cb wants nothing returned. */
     template <bool SSL>
     static void res_onAborted(const FunctionCallbackInfo<Value> &args) {
+        Isolate *isolate = args.GetIsolate();
         auto *res = getHttpResponse<SSL>(args);
         if (res) {
             /* This thing perfectly fits in with unique_function, and will Reset on destructor */
@@ -65,7 +68,7 @@ struct HttpResponseWrapper {
             /* This is how we capture res (C++ this in invocation of this function) */
             UniquePersistent<Object> resObject(isolate, args.Holder());
 
-            res->onAborted([p = std::move(p), resObject = std::move(resObject)]() {
+            res->onAborted([p = std::move(p), resObject = std::move(resObject), isolate]() {
                 HandleScope hs(isolate);
 
                 /* Mark this resObject invalid */
@@ -81,6 +84,7 @@ struct HttpResponseWrapper {
     /* Takes nothing, returns arraybuffer */
     template <bool SSL>
     static void res_getRemoteAddress(const FunctionCallbackInfo<Value> &args) {
+        Isolate *isolate = args.GetIsolate();
         auto *res = getHttpResponse<SSL>(args);
         if (res) {
             std::string_view ip = res->getRemoteAddress();
@@ -93,6 +97,7 @@ struct HttpResponseWrapper {
     /* Returns the current write offset */
     template <bool SSL>
     static void res_getWriteOffset(const FunctionCallbackInfo<Value> &args) {
+        Isolate *isolate = args.GetIsolate();
         auto *res = getHttpResponse<SSL>(args);
         if (res) {
             args.GetReturnValue().Set(Integer::New(isolate, getHttpResponse<SSL>(args)->getWriteOffset()));
@@ -102,12 +107,13 @@ struct HttpResponseWrapper {
     /* Takes function of bool(int), returns this */
     template <bool SSL>
     static void res_onWritable(const FunctionCallbackInfo<Value> &args) {
+        Isolate *isolate = args.GetIsolate();
         auto *res = getHttpResponse<SSL>(args);
         if (res) {
             /* This thing perfectly fits in with unique_function, and will Reset on destructor */
             UniquePersistent<Function> p(isolate, Local<Function>::Cast(args[0]));
 
-            res->onWritable([p = std::move(p)](int offset) {
+            res->onWritable([p = std::move(p), isolate](int offset) -> bool {
                 HandleScope hs(isolate);
 
                 Local<Value> argv[] = {Integer::NewFromUnsigned(isolate, offset)};
@@ -119,7 +125,7 @@ struct HttpResponseWrapper {
                     exit(-1);
                 }
 
-                return maybeBoolean.ToLocalChecked()->BooleanValue(isolate->GetCurrentContext()).ToChecked();
+                return BooleanValue(isolate, maybeBoolean.ToLocalChecked());
                 /* How important is this return? */
             });
 
@@ -161,6 +167,7 @@ struct HttpResponseWrapper {
     /* Takes data and optionally totalLength, returns true for success, false for backpressure */
     template <bool SSL>
     static void res_tryEnd(const FunctionCallbackInfo<Value> &args) {
+        Isolate *isolate = args.GetIsolate();
         auto *res = getHttpResponse<SSL>(args);
         if (res) {
             NativeString data(args.GetIsolate(), args[0]);
@@ -182,8 +189,8 @@ struct HttpResponseWrapper {
 
             /* This is a quick fix, it will need updating in µWS later on */
             Local<Array> array = Array::New(isolate, 2);
-            array->Set(0, Boolean::New(isolate, ok));
-            array->Set(1, Boolean::New(isolate, hasResponded));
+            array->Set(isolate->GetCurrentContext(), 0, Boolean::New(isolate, ok)).ToChecked();
+            array->Set(isolate->GetCurrentContext(), 1, Boolean::New(isolate, hasResponded)).ToChecked();
 
             args.GetReturnValue().Set(array);
         }
@@ -192,6 +199,7 @@ struct HttpResponseWrapper {
     /* Takes data, returns true for success, false for backpressure */
     template <bool SSL>
     static void res_write(const FunctionCallbackInfo<Value> &args) {
+        Isolate *isolate = args.GetIsolate();
         auto *res = getHttpResponse<SSL>(args);
         if (res) {
             NativeString data(args.GetIsolate(), args[0]);
@@ -207,6 +215,7 @@ struct HttpResponseWrapper {
     /* Takes key, value. Returns this */
     template <bool SSL>
     static void res_writeHeader(const FunctionCallbackInfo<Value> &args) {
+        Isolate *isolate = args.GetIsolate();
         auto *res = getHttpResponse<SSL>(args);
         if (res) {
             NativeString header(args.GetIsolate(), args[0]);
@@ -226,10 +235,11 @@ struct HttpResponseWrapper {
     /* Takes function, returns this (EXPERIMENTAL) */
     template <bool SSL>
     static void res_cork(const FunctionCallbackInfo<Value> &args) {
+        Isolate *isolate = args.GetIsolate();
         auto *res = getHttpResponse<SSL>(args);
         if (res) {
 
-            res->cork([cb = Local<Function>::Cast(args[0])]() {
+            res->cork([cb = Local<Function>::Cast(args[0]), isolate]() {
                 cb->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 0, nullptr).IsEmpty();
             });
 
@@ -238,38 +248,32 @@ struct HttpResponseWrapper {
     }
 
     template <bool SSL>
-    static void initResTemplate() {
+    static Local<Object> init(Isolate *isolate) {
         Local<FunctionTemplate> resTemplateLocal = FunctionTemplate::New(isolate);
         if (SSL) {
-            resTemplateLocal->SetClassName(String::NewFromUtf8(isolate, "uWS.SSLHttpResponse"));
+            resTemplateLocal->SetClassName(String::NewFromUtf8(isolate, "uWS.SSLHttpResponse", NewStringType::kNormal).ToLocalChecked());
         } else {
-            resTemplateLocal->SetClassName(String::NewFromUtf8(isolate, "uWS.HttpResponse"));
+            resTemplateLocal->SetClassName(String::NewFromUtf8(isolate, "uWS.HttpResponse", NewStringType::kNormal).ToLocalChecked());
         }
         resTemplateLocal->InstanceTemplate()->SetInternalFieldCount(1);
 
         /* Register our functions */
-        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "writeStatus"), FunctionTemplate::New(isolate, res_writeStatus<SSL>));
-        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "end"), FunctionTemplate::New(isolate, res_end<SSL>));
-        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "tryEnd"), FunctionTemplate::New(isolate, res_tryEnd<SSL>));
-        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "write"), FunctionTemplate::New(isolate, res_write<SSL>));
-        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "writeHeader"), FunctionTemplate::New(isolate, res_writeHeader<SSL>));
-        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "close"), FunctionTemplate::New(isolate, res_close<SSL>));
-        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "getWriteOffset"), FunctionTemplate::New(isolate, res_getWriteOffset<SSL>));
-        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "onWritable"), FunctionTemplate::New(isolate, res_onWritable<SSL>));
-        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "onAborted"), FunctionTemplate::New(isolate, res_onAborted<SSL>));
-        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "onData"), FunctionTemplate::New(isolate, res_onData<SSL>));
-        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "getRemoteAddress"), FunctionTemplate::New(isolate, res_getRemoteAddress<SSL>));
-        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "experimental_cork"), FunctionTemplate::New(isolate, res_cork<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "writeStatus", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, res_writeStatus<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "end", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, res_end<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "tryEnd", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, res_tryEnd<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "write", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, res_write<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "writeHeader", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, res_writeHeader<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "close", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, res_close<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "getWriteOffset", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, res_getWriteOffset<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "onWritable", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, res_onWritable<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "onAborted", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, res_onAborted<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "onData", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, res_onData<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "getRemoteAddress", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, res_getRemoteAddress<SSL>));
+        resTemplateLocal->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, "cork", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, res_cork<SSL>));
 
         /* Create our template */
         Local<Object> resObjectLocal = resTemplateLocal->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()->NewInstance(isolate->GetCurrentContext()).ToLocalChecked();
-        resTemplate[SSL].Reset(isolate, resObjectLocal);
-    }
-
-    template <class APP>
-    static Local<Object> getResInstance() {
-        return Local<Object>::New(isolate, resTemplate[std::is_same<APP, uWS::SSLApp>::value])->Clone();
+        
+        return resObjectLocal;
     }
 };
-
-Persistent<Object> HttpResponseWrapper::resTemplate[2];

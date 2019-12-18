@@ -11,7 +11,7 @@
 
 #### In a nutshell.
 
-There are tons of [examples](examples) but here's the gist of it all:
+Think of it as a complete replacement to both Express.js and Socket.IO, written entirely in C/C++ for maximum performance and reliability. There are tons of [examples](examples) but here's the gist of it all:
 
 ```javascript
 /* Non-SSL is simply App() */
@@ -44,7 +44,7 @@ require('uWebSockets.js').SSLApp({
 
 #### Ready all thrusters.
 
-Install with `npm install uNetworking/uWebSockets.js#v16.0.0` or any such [release](https://github.com/uNetworking/uWebSockets.js/releases). No compiler needed.
+Install with `npm install uNetworking/uWebSockets.js#v16.4.0` or any such [release](https://github.com/uNetworking/uWebSockets.js/releases). No compiler needed.
 
 ![](misc/features_strip.png)
 

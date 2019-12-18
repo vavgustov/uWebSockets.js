@@ -17,19 +17,25 @@
 
 /* We are only allowed to depend on µWS and V8 in this layer. */
 #include "App.h"
-#include <v8.h>
+
 #include <iostream>
 #include <vector>
 #include <type_traits>
+
+#include <v8.h>
 using namespace v8;
 
-/* These two are definitely static */
-Isolate *isolate;
-bool valid = true;
-
-/* We hold all apps until free */
-std::vector<std::unique_ptr<uWS::App>> apps;
-std::vector<std::unique_ptr<uWS::SSLApp>> sslApps;
+/* Compatibility for V8 7.0 and earlier */
+#include <v8-version.h>
+bool BooleanValue(Isolate *isolate, Local<Value> value) {
+    #if V8_MAJOR_VERSION < 7 || (V8_MAJOR_VERSION == 7 && V8_MINOR_VERSION == 0)
+        /* Old */
+        return value->BooleanValue(isolate->GetCurrentContext()).ToChecked();
+    #else
+        /* Node.js 12, 13 */
+        return value->BooleanValue(isolate);
+    #endif
+}
 
 #include "Utilities.h"
 #include "WebSocketWrapper.h"
@@ -41,13 +47,27 @@ std::vector<std::unique_ptr<uWS::SSLApp>> sslApps;
 
 /* This has to be called in beforeExit, but exit also seems okay */
 void uWS_free(const FunctionCallbackInfo<Value> &args) {
-    if (valid) {
+    
+    /* We get the External holding perContextData */
+    PerContextData *perContextData = (PerContextData *) Local<External>::Cast(args.Data())->Value();
+
+    /* Todo: this will always be true */
+    if (perContextData) {
         /* Freeing apps here, it could be done earlier but not sooner */
-        apps.clear();
-        sslApps.clear();
+        perContextData->apps.clear();
+        perContextData->sslApps.clear();
         /* Freeing the loop here means we give time for our timers to close, etc */
         uWS::Loop::get()->free();
-        valid = false;
+
+
+        // we need to mark this
+        delete perContextData;
+
+        // we can override the exports->free function to null after!
+
+        //args.Data()
+        
+        //Local<External>::Cast(args.Data())->
     }
 }
 
@@ -57,49 +77,52 @@ void uWS_us_listen_socket_close(const FunctionCallbackInfo<Value> &args) {
     us_listen_socket_close(0, (struct us_listen_socket_t *) External::Cast(*args[0])->Value());
 }
 
-#include <uv.h>
-
 void Main(Local<Object> exports) {
-    /* I guess we store this statically */
-    isolate = exports->GetIsolate();
+
+    /* We pass isolate everywhere */
+    Isolate *isolate = exports->GetIsolate();
 
     /* We want this so that we can redefine process.nextTick to using the V8 native microtask queue */
     // todo: setting this might be crashing nodejs?
     isolate->SetMicrotasksPolicy(MicrotasksPolicy::kAuto);
 
-    /* Integrate with existing libuv loop, we just pass a boolean basically */
-    uWS::Loop::get(uv_default_loop());
+    /* Init the template objects, SSL and non-SSL, store it in per context data */
+    PerContextData *perContextData = new PerContextData;
+    perContextData->isolate = isolate;
+    perContextData->reqTemplate.Reset(isolate, HttpRequestWrapper::init(isolate));
+    perContextData->resTemplate[0].Reset(isolate, HttpResponseWrapper::init<0>(isolate));
+    perContextData->resTemplate[1].Reset(isolate, HttpResponseWrapper::init<1>(isolate));
+    perContextData->wsTemplate[0].Reset(isolate, WebSocketWrapper::init<0>(isolate));
+    perContextData->wsTemplate[1].Reset(isolate, WebSocketWrapper::init<1>(isolate));
+
+    /* Refer to per context data via External */
+    Local<External> externalPerContextData = External::New(isolate, perContextData);
 
     /* uWS namespace */
-    exports->Set(String::NewFromUtf8(isolate, "App"), FunctionTemplate::New(isolate, uWS_App<uWS::App>)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked());
-    exports->Set(String::NewFromUtf8(isolate, "SSLApp"), FunctionTemplate::New(isolate, uWS_App<uWS::SSLApp>)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked());
-    exports->Set(String::NewFromUtf8(isolate, "free"), FunctionTemplate::New(isolate, uWS_free)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked());
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "App", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_App<uWS::App>, externalPerContextData)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "SSLApp", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_App<uWS::SSLApp>, externalPerContextData)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "free", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_free, externalPerContextData)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
 
     /* Expose some µSockets functions directly under uWS namespace */
-    exports->Set(String::NewFromUtf8(isolate, "us_listen_socket_close"), FunctionTemplate::New(isolate, uWS_us_listen_socket_close)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked());
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "us_listen_socket_close", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_us_listen_socket_close)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
 
     /* Compression enum */
-    exports->Set(String::NewFromUtf8(isolate, "DISABLED"), Integer::NewFromUnsigned(isolate, uWS::DISABLED));
-    exports->Set(String::NewFromUtf8(isolate, "SHARED_COMPRESSOR"), Integer::NewFromUnsigned(isolate, uWS::SHARED_COMPRESSOR));
-    exports->Set(String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR"), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR));
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DISABLED", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DISABLED)).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "SHARED_COMPRESSOR", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::SHARED_COMPRESSOR)).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR)).ToChecked();
 
     /* Listen options */
-    exports->Set(String::NewFromUtf8(isolate, "LIBUS_LISTEN_EXCLUSIVE_PORT"), Integer::NewFromUnsigned(isolate, LIBUS_LISTEN_EXCLUSIVE_PORT));
-
-    /* The template for websockets */
-    WebSocketWrapper::initWsTemplate<0>();
-    WebSocketWrapper::initWsTemplate<1>();
-
-    /* Initialize SSL and non-SSL templates */
-    HttpResponseWrapper::initResTemplate<0>();
-    HttpResponseWrapper::initResTemplate<1>();
-
-    /* Init a shared request object */
-    HttpRequestWrapper::initReqTemplate();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "LIBUS_LISTEN_EXCLUSIVE_PORT", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, LIBUS_LISTEN_EXCLUSIVE_PORT)).ToChecked();
 }
 
 /* This is required when building as a Node.js addon */
 #ifndef ADDON_IS_HOST
 #include <node.h>
-NODE_MODULE(uWS, Main)
+extern "C" NODE_MODULE_EXPORT void
+NODE_MODULE_INITIALIZER(Local<Object> exports, Local<Value> module, Local<Context> context) {
+    /* Integrate uSockets with existing libuv loop */
+    uWS::Loop::get(node::GetCurrentEventLoop(context->GetIsolate()));
+    /* Register vanilla V8 addon */
+    Main(exports);
+}
 #endif
