@@ -47,28 +47,28 @@ bool BooleanValue(Isolate *isolate, Local<Value> value) {
 
 /* This has to be called in beforeExit, but exit also seems okay */
 void uWS_free(const FunctionCallbackInfo<Value> &args) {
-    
+    /* Holder is exports */
+    Local<Object> exports = args.Holder();
+
+    /* See if we even have free anymore */
+    if (exports->Get(args.GetIsolate()->GetCurrentContext(), String::NewFromUtf8(args.GetIsolate(), "free", NewStringType::kNormal).ToLocalChecked()).ToLocalChecked() == Undefined(args.GetIsolate())) {
+        return;
+    }
+
+    /* Once we free uWS we remove the uWS.free function from exports */
+    exports->Set(args.GetIsolate()->GetCurrentContext(), String::NewFromUtf8(args.GetIsolate(), "free", NewStringType::kNormal).ToLocalChecked(), Undefined(args.GetIsolate())).ToChecked();
+
     /* We get the External holding perContextData */
     PerContextData *perContextData = (PerContextData *) Local<External>::Cast(args.Data())->Value();
 
-    /* Todo: this will always be true */
-    if (perContextData) {
-        /* Freeing apps here, it could be done earlier but not sooner */
-        perContextData->apps.clear();
-        perContextData->sslApps.clear();
-        /* Freeing the loop here means we give time for our timers to close, etc */
-        uWS::Loop::get()->free();
+    /* Freeing apps here, it could be done earlier but not sooner */
+    perContextData->apps.clear();
+    perContextData->sslApps.clear();
+    /* Freeing the loop here means we give time for our timers to close, etc */
+    uWS::Loop::get()->free();
 
-
-        // we need to mark this
-        delete perContextData;
-
-        // we can override the exports->free function to null after!
-
-        //args.Data()
-        
-        //Local<External>::Cast(args.Data())->
-    }
+    /* We can safely delete this since we no longer can call uWS.free */
+    delete perContextData;
 }
 
 /* todo: Put this function and all inits of it in its own header */
@@ -82,9 +82,11 @@ void Main(Local<Object> exports) {
     /* We pass isolate everywhere */
     Isolate *isolate = exports->GetIsolate();
 
+#ifndef PERFORM_LIKE_GARBAGE
     /* We want this so that we can redefine process.nextTick to using the V8 native microtask queue */
-    // todo: setting this might be crashing nodejs?
+    /* Settings this crashes Node.js while debugging with breakpoints */
     isolate->SetMicrotasksPolicy(MicrotasksPolicy::kAuto);
+#endif
 
     /* Init the template objects, SSL and non-SSL, store it in per context data */
     PerContextData *perContextData = new PerContextData;
