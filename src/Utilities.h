@@ -4,21 +4,17 @@
 #include <v8.h>
 using namespace v8;
 
-/* Unfortunately we have to perform like garbage to be friends with Node.js */
-#define PERFORM_LIKE_GARBAGE
-
-/* Unfortunately we have to depend on Node.js garbage */
+/* Unfortunately we _have_ to depend on Node.js crap */
 #include <node.h>
 
-/* This is a very hot function ruined by illiteracy */
 MaybeLocal<Value> CallJS(Isolate *isolate, Local<Function> f, int argc, Local<Value> *argv) {
-    #ifdef PERFORM_LIKE_GARBAGE
-        /* Node.js is built by incompetent people who should never have touched a computer in the first place */
-		return node::MakeCallback(isolate, isolate->GetCurrentContext()->Global(), f, argc, argv, {0, 0});
-    #else
-        /* Google LLC don't hire incompetent people to work on their stuff */
+    if (experimental_fastcall) {
+        /* Fast path */
         return f->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), argc, argv);
-    #endif
+    } else {
+        /* Slow path */
+        return node::MakeCallback(isolate, isolate->GetCurrentContext()->Global(), f, argc, argv, {0, 0});
+    }
 }
 
 struct PerContextData {

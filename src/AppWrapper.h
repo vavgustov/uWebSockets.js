@@ -24,6 +24,8 @@ void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
     UniquePersistent<Function> messagePf;
     UniquePersistent<Function> drainPf;
     UniquePersistent<Function> closePf;
+    UniquePersistent<Function> pingPf;
+    UniquePersistent<Function> pongPf;
 
     struct PerSocketData {
         UniquePersistent<Object> *socketPf;
@@ -65,6 +67,11 @@ void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
         drainPf.Reset(args.GetIsolate(), Local<Function>::Cast(behaviorObject->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "drain", NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()));
         /* Close */
         closePf.Reset(args.GetIsolate(), Local<Function>::Cast(behaviorObject->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "close", NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()));
+        /* Ping */
+        pingPf.Reset(args.GetIsolate(), Local<Function>::Cast(behaviorObject->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "ping", NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()));
+        /* Pong */
+        pongPf.Reset(args.GetIsolate(), Local<Function>::Cast(behaviorObject->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "pong", NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()));
+
     }
 
     /* Open handler is NOT optional for the wrapper */
@@ -107,7 +114,7 @@ void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
             CallJS(isolate, Local<Function>::New(isolate, messagePf), 3, argv);
 
             /* Important: we clear the ArrayBuffer to make sure it is not invalidly used after return */
-            messageArrayBuffer->Neuter();
+            NeuterArrayBuffer(messageArrayBuffer);
         };
     }
 
@@ -123,14 +130,27 @@ void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
         };
     }
 
-    /* These are not hooked in */
-    behavior.ping = [](auto *ws) {
+    /* Ping handler is always optional */
+    if (pingPf != Undefined(isolate)) {
+        behavior.ping = [pingPf = std::move(pingPf), isolate](auto *ws) {
+            HandleScope hs(isolate);
 
-    };
+            PerSocketData *perSocketData = (PerSocketData *) ws->getUserData();
+            Local<Value> argv[1] = {Local<Object>::New(isolate, *(perSocketData->socketPf))};
+            CallJS(isolate, Local<Function>::New(isolate, pingPf), 1, argv);
+        };
+    }
 
-    behavior.pong = [](auto *ws) {
+    /* Pong handler is always optional */
+    if (pongPf != Undefined(isolate)) {
+        behavior.pong = [pongPf = std::move(pongPf), isolate](auto *ws) {
+            HandleScope hs(isolate);
 
-    };
+            PerSocketData *perSocketData = (PerSocketData *) ws->getUserData();
+            Local<Value> argv[1] = {Local<Object>::New(isolate, *(perSocketData->socketPf))};
+            CallJS(isolate, Local<Function>::New(isolate, pongPf), 1, argv);
+        };
+    }
 
     /* Close handler is NOT optional for the wrapper */
     behavior.close = [closePf = std::move(closePf), isolate](auto *ws, int code, std::string_view message) {
@@ -153,7 +173,7 @@ void uWS_App_ws(const FunctionCallbackInfo<Value> &args) {
         delete perSocketData->socketPf;
 
         /* Again, here we clear the buffer to avoid strange bugs */
-        messageArrayBuffer->Neuter();
+        NeuterArrayBuffer(messageArrayBuffer);
     };
 
     app->template ws<PerSocketData>(std::string(pattern.getString()), std::move(behavior));
@@ -216,7 +236,8 @@ void uWS_App_listen(const FunctionCallbackInfo<Value> &args) {
     auto cb = [&args, isolate](auto *token) {
         /* Return a false boolean if listen failed */
         Local<Value> argv[] = {token ? Local<Value>::Cast(External::New(isolate, token)) : Local<Value>::Cast(Boolean::New(isolate, false))};
-        CallJS(isolate, Local<Function>::Cast(args[args.Length() - 1]), 1, argv);
+        /* Immediate call cannot be CallJS */
+        Local<Function>::Cast(args[args.Length() - 1])->Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 1, argv);
     };
 
     /* Host is first, if present */

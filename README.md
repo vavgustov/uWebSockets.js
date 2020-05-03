@@ -44,9 +44,11 @@ require('uWebSockets.js').SSLApp({
 
 #### Ready all thrusters.
 
-Install with `npm install uNetworking/uWebSockets.js#v17.1.0` or any such [release](https://github.com/uNetworking/uWebSockets.js/releases). No compiler needed.
+Install with `npm install uNetworking/uWebSockets.js#v17.4.0` or any such [release](https://github.com/uNetworking/uWebSockets.js/releases). No compiler needed.
 
 ![](misc/features_strip.png)
+
+Real-world tests over TLS 1.3 and Ethernet puts us **5x** as efficient as Socket.IO, **2x** as efficient as websockets/ws.
 
 #### Pay what you want.
 Commercially developed on a sponsored/consulting basis; BitMEX, Bitfinex and Coinbase are current or previous sponsors. Contact [me, the author](https://github.com/alexhultman) for support, feature development or consulting/contracting.

@@ -22,6 +22,9 @@
 #include <vector>
 #include <type_traits>
 
+/* This one can never change for the duration of this process, so never mind per context data:ing it, yes that is a word now */
+bool experimental_fastcall = 0;
+
 #include <v8.h>
 using namespace v8;
 
@@ -34,6 +37,16 @@ bool BooleanValue(Isolate *isolate, Local<Value> value) {
     #else
         /* Node.js 12, 13 */
         return value->BooleanValue(isolate);
+    #endif
+}
+
+void NeuterArrayBuffer(Local<ArrayBuffer> ab) {
+    #if V8_MAJOR_VERSION < 7 || (V8_MAJOR_VERSION == 7 && V8_MINOR_VERSION == 0)
+        /* Old */
+        ab->Neuter();
+    #else
+        /* Node.js 12, 13 */
+        ab->Detach();
     #endif
 }
 
@@ -79,14 +92,17 @@ void uWS_us_listen_socket_close(const FunctionCallbackInfo<Value> &args) {
 
 void Main(Local<Object> exports) {
 
+    /* We only care if it is defined, not what it says */
+    experimental_fastcall = getenv("EXPERIMENTAL_FASTCALL") != nullptr;
+
     /* We pass isolate everywhere */
     Isolate *isolate = exports->GetIsolate();
 
-#ifndef PERFORM_LIKE_GARBAGE
-    /* We want this so that we can redefine process.nextTick to using the V8 native microtask queue */
-    /* Settings this crashes Node.js while debugging with breakpoints */
-    isolate->SetMicrotasksPolicy(MicrotasksPolicy::kAuto);
-#endif
+    if (experimental_fastcall) {
+        /* We want this so that we can redefine process.nextTick to using the V8 native microtask queue */
+        /* Settings this crashes Node.js while debugging with breakpoints */
+        isolate->SetMicrotasksPolicy(MicrotasksPolicy::kAuto);
+    }
 
     /* Init the template objects, SSL and non-SSL, store it in per context data */
     PerContextData *perContextData = new PerContextData;
@@ -112,6 +128,16 @@ void Main(Local<Object> exports) {
     exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DISABLED", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DISABLED)).ToChecked();
     exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "SHARED_COMPRESSOR", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::SHARED_COMPRESSOR)).ToChecked();
     exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR)).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR_3KB", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR_3KB)).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR_4KB", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR_4KB)).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR_8KB", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR_8KB)).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR_16KB", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR_16KB)).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR_32KB", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR_32KB)).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR_64KB", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR_64KB)).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR_128KB", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR_128KB)).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR_256KB", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR_256KB)).ToChecked();
+
+
 
     /* Listen options */
     exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "LIBUS_LISTEN_EXCLUSIVE_PORT", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, LIBUS_LISTEN_EXCLUSIVE_PORT)).ToChecked();
