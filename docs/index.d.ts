@@ -1,57 +1,123 @@
-/* Under construction, lots of things to add */
-
-/** Native type representing a raw uSockets struct us_listen_socket. */
+/** Native type representing a raw uSockets struct us_listen_socket.
+ * Careful with this one, it is entirely unchecked and native so invalid usage will blow up.
+ */
 export interface us_listen_socket {
 
 }
 
-/** Recognized string types, things C++ can read and understand as strings */
+/** Native type representing a raw uSockets struct us_socket_context_t.
+ * Used while upgrading a WebSocket manually. */
+export interface us_socket_context_t {
+
+}
+
+/** Recognized string types, things C++ can read and understand as strings.
+ * "String" does not have to mean "text", it can also be "binary".
+ *
+ * Ironically, JavaScript strings are the least performant of all options, to pass or receive to/from C++.
+ * This because we expect UTF-8, which is packed in 8-byte chars. JavaScript strings are UTF-16 internally meaning extra copies and reinterpretation are required.
+ *
+ * That's why all events pass data by ArrayBuffer and not JavaScript strings, as they allow zero-copy data passing.
+ *
+ * You can always do Buffer.from(arrayBuffer).toString(), but keeping things binary and as ArrayBuffer is preferred.
+ */
 export type RecognizedString = string | ArrayBuffer | Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32Array | Int32Array | Float32Array | Float64Array;
 
-/** A WebSocket connection that is valid from open to close event */
+/** A WebSocket connection that is valid from open to close event.
+ * Read more about this in the user manual.
+ */
 export interface WebSocket {
-    /** Sends a message. Make sure to check getBufferedAmount() before sending. Returns true for success, false for built up backpressure that will drain when time is given. */
+    /** Sends a message. Make sure to check getBufferedAmount() before sending. Returns true for success, false for built up backpressure that will drain when time is given.
+     * Returning false does not mean nothing was sent, it only means backpressure was built up. This you can check by calling getBufferedAmount() afterwards.
+     *
+     * Make sure you properly understand the contept of backpressure. Check the backpressure example file.
+     */
     send(message: RecognizedString, isBinary?: boolean, compress?: boolean) : boolean;
 
-    /** Returns the bytes buffered in backpressure. */
+    /** Returns the bytes buffered in backpressure. This is similar to the bufferedAmount property in the browser counterpart.
+     * Check backpressure example.
+     */
     getBufferedAmount() : number;
 
-    /** Gracefully closes this WebSocket. Immediately calls close handler. */
+    /** Gracefully closes this WebSocket. Immediately calls the close handler.
+     * A WebSocket close message is sent with code and shortMessage.
+     */
     end(code?: number, shortMessage?: RecognizedString) : WebSocket;
 
-    /** Forcefully closes this WebSocket */
+    /** Forcefully closes this WebSocket. Immediately calls the close handler.
+     * No WebSocket close message is sent.
+     */
     close() : WebSocket;
 
-    /** Sends a ping control message. Returns true on success, see WebSocket.send. This helper function correlates to WebSocket::send(message, uWS::OpCode::PING, ...). */
+    /** Sends a ping control message. Returns true on success in similar ways as WebSocket.send does (regarding backpressure). This helper function correlates to WebSocket::send(message, uWS::OpCode::PING, ...) in C++. */
     ping(message?: RecognizedString) : boolean;
 
-    /** Subscribe to a topic in MQTT syntax */
+    /** Subscribe to a topic in MQTT syntax.
+     * 
+     * MQTT syntax includes things like "root/child/+/grandchild" where "+" is a
+     * wildcard and "root/#" where "#" is a terminating wildcard.
+     * 
+     * Read more about MQTT.
+    */
     subscribe(topic: RecognizedString) : WebSocket;
 
     /** Unsubscribe from a topic. Returns true on success, if the WebSocket was subscribed. */
     unsubscribe(topic: RecognizedString) : boolean;
 
-    /** Unsubscribe from all topics. */
+    /** Unsubscribe from all topics. This is called automatically before any close handler is called, so you never need to call this manually in the close handler of a WebSocket. */
     unsubscribeAll() : void;
 
-    /** Publish a message to a topic in MQTT syntax */
+    /** Publish a message to a topic in MQTT syntax. You cannot publish using wildcards, only fully specified topics. Just like with MQTT.
+     *
+     * "parent/child" kind of tree is allowed, but not "parent/#" kind of wildcard publishing.
+     *
+     * The pub/sub system does not guarantee order between what you manually send using WebSocket.send
+     * and what you publish using WebSocket.publish. WebSocket messages are perfectly atomic, but the order in which they appear can get scrambled if you mix the two sending functions on the same socket.
+     * This shouldn't matter in most applications. Order is guaranteed relative to other calls to WebSocket.publish.
+     * 
+     * Also keep in mind that backpressure will be automatically managed with pub/sub, meaning some outgoing messages may be dropped if backpressure is greater than specified maxBackpressure.
+    */
     publish(topic: RecognizedString, message: RecognizedString, isBinary?: boolean, compress?: boolean) : WebSocket;
 
-    /** See HttpResponse.cork */
+    /** See HttpResponse.cork. Takes a function in which the socket is corked (packing many sends into one single syscall/SSL block) */
     cork(cb: () => void) : void;
 
-    /** Returns the remote IP address */
+    /** Returns the remote IP address. Note that the returned IP is binary, not text.
+     *
+     * IPv4 is 4 byte long and can be converted to text by printing every byte as a digit between 0 and 255.
+     * IPv6 is 16 byte long and can be converted to text in similar ways, but you typically print digits in HEX.
+     *
+     * See getRemoteAddressAsText() for a text version.
+     */
     getRemoteAddress() : ArrayBuffer;
-    
-    /** Arbitrary user data may be attached to this object */
+
+    /** Returns the remote IP address as text. See RecognizedString. */
+    getRemoteAddressAsText() : ArrayBuffer;
+
+    /** Arbitrary user data may be attached to this object. In C++ this is done by using getUserData(). */
     [key: string]: any;
 }
 
 /** An HttpResponse is valid until either onAborted callback or any of the .end/.tryEnd calls succeed. You may attach user data to this object. */
 export interface HttpResponse {
-    /** Writes the HTTP status message such as "200 OK". */
+    /** Writes the HTTP status message such as "200 OK".
+     * This has to be called first in any response, otherwise
+     * it will be called automatically with "200 OK".
+     * 
+     * If you want to send custom headers in a WebSocket
+     * upgrade response, you have to call writeStatus with
+     * "101 Switching Protocols" before you call writeHeader,
+     * otherwise your first call to writeHeader will call
+     * writeStatus with "200 OK" and the upgrade will fail.
+     * 
+     * As you can imagine, we format outgoing responses in a linear
+     * buffer, not in a hash table. You can read about this in
+     * the user manual under "corking".
+    */
     writeStatus(status: RecognizedString) : HttpResponse;
-    /** Writes key and value to HTTP response. */
+    /** Writes key and value to HTTP response. 
+     * See writeStatus and corking.
+    */
     writeHeader(key: RecognizedString, value: RecognizedString) : HttpResponse;
     /** Enters or continues chunked encoding mode. Writes part of the response. End with zero length write. */
     write(chunk: RecognizedString) : HttpResponse;
@@ -60,7 +126,7 @@ export interface HttpResponse {
     /** Ends this response, or tries to, by streaming appropriately sized chunks of body. Use in conjunction with onWritable. Returns tuple [ok, hasResponded].*/
     tryEnd(fullBodyOrChunk: RecognizedString, totalSize: number) : [boolean, boolean];
 
-    /** Immediately force closes the connection. */
+    /** Immediately force closes the connection. Any onAborted callback will run. */
     close() : HttpResponse;
 
     /** Returns the global byte write offset for this response. Use with onWritable. */
@@ -81,8 +147,17 @@ export interface HttpResponse {
     /** Handler for reading data from POST and such requests. You MUST copy the data of chunk if isLast is not true. We Neuter ArrayBuffers on return, making it zero length.*/
     onData(handler: (chunk: ArrayBuffer, isLast: boolean) => void) : HttpResponse;
 
-    /** Returns the remote IP address */
+    /** Returns the remote IP address in binary format (4 or 16 bytes). */
     getRemoteAddress() : ArrayBuffer;
+
+    /** Returns the remote IP address as text. */
+    getRemoteAddressAsText() : ArrayBuffer;
+
+    /** Returns the remote IP address in binary format (4 or 16 bytes), as reported by the PROXY Protocol v2 compatible proxy. */
+    getProxiedRemoteAddress() : ArrayBuffer;
+
+    /** Returns the remote IP address as text, as reported by the PROXY Protocol v2 compatible proxy. */
+    getProxiedRemoteAddressAsText() : ArrayBuffer;
 
     /** Corking a response is a performance improvement in both CPU and network, as you ready the IO system for writing multiple chunks at once.
      * By default, you're corked in the immediately executing top portion of the route handler. In all other cases, such as when returning from
@@ -90,14 +165,17 @@ export interface HttpResponse {
      * to cork before calling writeStatus, writeHeader or just write. Corking takes a callback in which you execute the writeHeader, writeStatus and
      * such calls, in one atomic IO operation. This is important, not only for TCP but definitely for TLS where each write would otherwise result
      * in one TLS block being sent off, each with one send syscall.
-     * 
+     *
      * Example usage:
-     * 
+     *
      * res.cork(() => {
      *   res.writeStatus("200 OK").writeHeader("Some", "Value").write("Hello world!");
      * });
      */
     cork(cb: () => void) : void;
+
+    /** Upgrades a HttpResponse to a WebSocket. See UpgradeAsync, UpgradeSync example files. */
+    upgrade<T>(userData : T, secWebSocketKey: RecognizedString, secWebSocketProtocol: RecognizedString, secWebSocketExtensions: RecognizedString, context: us_socket_context_t) : void;
 
     /** Arbitrary user data may be attached to this object */
     [key: string]: any;
@@ -121,31 +199,39 @@ export interface HttpRequest {
     setYield(yield: boolean) : HttpRequest;
 }
 
-/** A structure holding settings and handlers for a WebSocket route handler. */
+/** A structure holding settings and handlers for a WebSocket URL route handler. */
 export interface WebSocketBehavior {
-    /** Maximum length of received message. */
+    /** Maximum length of received message. If a client tries to send you a message larger than this, the connection is immediately closed. */
     maxPayloadLength?: number;
-    /** Maximum amount of seconds that may pass without sending or getting a message. */
+    /** Maximum amount of seconds that may pass without sending or getting a message. Connection is closed if this timeout passes. Resolution (granularity) for timeouts are typically 4 seconds, rounded to closest.
+     * Disable by leaving 0.
+     */
     idleTimeout?: number;
-    /** 0 = no compression, 1 = shared compressor, 2 = dedicated compressor. See C++ project. */
+    /** What permessage-deflate compression to use. uWS.DISABLED, uWS.SHARED_COMPRESSOR or any of the uWS.DEDICATED_COMPRESSOR_xxxKB. */
     compression?: CompressOptions;
-    /** Maximum length of allowed backpressure per socket when publishing messages. Slow receivers, WebSockets, will be disconnected if needed. */
+    /** Maximum length of allowed backpressure per socket when PUBLISHING messages (does not apply to ws.send). Slow receivers with too high backpressure will be skipped until they catch up or timeout. */
     maxBackpressure?: number;
+    /** Upgrade handler used to intercept HTTP upgrade requests and potentially upgrade to WebSocket.
+     * See UpgradeAsync and UpgradeSync example files.
+     */
+    upgrade?: (res: HttpResponse, req: HttpRequest, context: us_socket_context_t) => void;
     /** Handler for new WebSocket connection. WebSocket is valid from open to close, no errors. */
-    open?: (ws: WebSocket, req: HttpRequest) => void;
-    /** Handler for a WebSocket message. */
+    open?: (ws: WebSocket) => void;
+    /** Handler for a WebSocket message. Messages are given as ArrayBuffer no matter if they are binary or not. Given ArrayBuffer is valid during the lifetime of this callback (until first await or return) and will be neutered. */
     message?: (ws: WebSocket, message: ArrayBuffer, isBinary: boolean) => void;
-    /** Handler for when WebSocket backpressure drains. Check ws.getBufferedAmount(). */
+    /** Handler for when WebSocket backpressure drains. Check ws.getBufferedAmount(). Use this to guide / drive your backpressure throttling. */
     drain?: (ws: WebSocket) => void;
-    /** Handler for close event, no matter if error, timeout or graceful close. You may not use WebSocket after this event. */
+    /** Handler for close event, no matter if error, timeout or graceful close. You may not use WebSocket after this event. Do not send on this WebSocket from within here, it is closed. */
     close?: (ws: WebSocket, code: number, message: ArrayBuffer) => void;
-    /** Handler for received ping control message. */
+    /** Handler for received ping control message. You do not need to handle this, pong messages are automatically sent as per the standard. */
     ping?: (ws: WebSocket) => void;
     /** Handler for received pong control message. */
     pong?: (ws: WebSocket) => void;
 }
 
-/** Options used when constructing an app. */
+/** Options used when constructing an app. Especially for SSLApp.
+ * These are options passed directly to uSockets, C layer.
+ */
 export interface AppOptions {
     key_file_name?: RecognizedString;
     cert_file_name?: RecognizedString;
@@ -155,12 +241,19 @@ export interface AppOptions {
     ssl_prefer_low_memory_usage?: boolean;
 }
 
-/** TemplatedApp is either an SSL or non-SSL app. */
+export enum ListenOptions {
+  LIBUS_LISTEN_DEFAULT = 0,
+  LIBUS_LISTEN_EXCLUSIVE_PORT = 1
+}
+
+/** TemplatedApp is either an SSL or non-SSL app. See App for more info, read user manual. */
 export interface TemplatedApp {
     /** Listens to hostname & port. Callback hands either false or a listen socket. */
     listen(host: RecognizedString, port: number, cb: (listenSocket: us_listen_socket) => void): TemplatedApp;
     /** Listens to port. Callback hands either false or a listen socket. */
     listen(port: number, cb: (listenSocket: any) => void): TemplatedApp;
+    /** Listens to port and sets Listen Options. Callback hands either false or a listen socket. */
+    listen(port: number, options: ListenOptions, cb: (listenSocket: us_listen_socket | false) => void): TemplatedApp;
     /** Registers an HTTP GET handler matching specified URL pattern. */
     get(pattern: RecognizedString, handler: (res: HttpResponse, req: HttpRequest) => void) : TemplatedApp;
     /** Registers an HTTP POST handler matching specified URL pattern. */
@@ -187,10 +280,12 @@ export interface TemplatedApp {
     publish(topic: RecognizedString, message: RecognizedString, isBinary?: boolean, compress?: boolean) : TemplatedApp;
 }
 
-/** Constructs a non-SSL app */
+/** Constructs a non-SSL app. An app is your starting point where you attach behavior to URL routes.
+ * This is also where you listen and run your app, set any SSL options (in case of SSLApp) and the like.
+ */
 export function App(options?: AppOptions): TemplatedApp;
 
-/** Constructs an SSL app */
+/** Constructs an SSL app. See App. */
 export function SSLApp(options: AppOptions): TemplatedApp;
 
 /** Closes a uSockets listen socket. */
@@ -198,13 +293,10 @@ export function us_listen_socket_close(listenSocket: us_listen_socket): void;
 
 /** WebSocket compression options */
 export type CompressOptions = number;
-/** No compression (always a good idea) */
+/** No compression (always a good idea if you operate using an efficient binary protocol) */
 export var DISABLED: CompressOptions;
-/** Zero memory overhead compression (recommended) */
+/** Zero memory overhead compression (recommended for pub/sub where same message is sent to many receivers) */
 export var SHARED_COMPRESSOR: CompressOptions;
-/** Sliding dedicated compress window, requires 256KB of memory per socket */
-export var DEDICATED_COMPRESSOR: CompressOptions;
-
 /** Sliding dedicated compress window, requires 3KB of memory per socket */
 export var DEDICATED_COMPRESSOR_3KB: CompressOptions;
 /** Sliding dedicated compress window, requires 4KB of memory per socket */

@@ -90,6 +90,203 @@ void uWS_us_listen_socket_close(const FunctionCallbackInfo<Value> &args) {
     us_listen_socket_close(0, (struct us_listen_socket_t *) External::Cast(*args[0])->Value());
 }
 
+/* Temporary KV store (doesn't belong here) */
+#include <unordered_map>
+#include <string>
+#include <mutex>
+
+std::unordered_map<std::string, std::unordered_map<std::string, std::string>> kvStoreString;
+std::unordered_map<std::string, std::unordered_map<std::string, uint32_t>> kvStoreInteger;
+std::mutex kvMutex;
+
+// getString(key, collection)
+void uWS_getString(const FunctionCallbackInfo<Value> &args) {
+    NativeString key(args.GetIsolate(), args[0]);
+    if (key.isInvalid(args)) {
+        return;
+    }
+
+    NativeString collection(args.GetIsolate(), args[1]);
+    if (collection.isInvalid(args)) {
+        return;
+    }
+
+    std::string value = kvStoreString[std::string(collection.getString())][std::string(key.getString())];
+
+    args.GetReturnValue().Set(String::NewFromUtf8(args.GetIsolate(), value.data(), NewStringType::kNormal, value.length()).ToLocalChecked());
+}
+
+void uWS_setString(const FunctionCallbackInfo<Value> &args) {
+    NativeString key(args.GetIsolate(), args[0]);
+    if (key.isInvalid(args)) {
+        return;
+    }
+    NativeString value(args.GetIsolate(), args[1]);
+    if (value.isInvalid(args)) {
+        return;
+    }
+
+    NativeString collection(args.GetIsolate(), args[2]);
+    if (collection.isInvalid(args)) {
+        return;
+    }
+
+    kvStoreString[std::string(collection.getString())][std::string(key.getString())] = value.getString();
+}
+
+void uWS_getInteger(const FunctionCallbackInfo<Value> &args) {
+    NativeString key(args.GetIsolate(), args[0]);
+    if (key.isInvalid(args)) {
+        return;
+    }
+
+    NativeString collection(args.GetIsolate(), args[1]);
+    if (collection.isInvalid(args)) {
+        return;
+    }
+
+    uint32_t value = kvStoreInteger[std::string(collection.getString())][std::string(key.getString())];
+
+    args.GetReturnValue().Set(Integer::New(args.GetIsolate(), value));
+}
+
+void uWS_setInteger(const FunctionCallbackInfo<Value> &args) {
+    NativeString key(args.GetIsolate(), args[0]);
+    if (key.isInvalid(args)) {
+        return;
+    }
+
+    uint32_t value = Local<Integer>::Cast(args[1])->Value();
+    
+    NativeString collection(args.GetIsolate(), args[2]);
+    if (collection.isInvalid(args)) {
+        return;
+    }
+
+    kvStoreInteger[std::string(collection.getString())][std::string(key.getString())] = value;
+}
+
+void uWS_incInteger(const FunctionCallbackInfo<Value> &args) {
+    NativeString key(args.GetIsolate(), args[0]);
+    if (key.isInvalid(args)) {
+        return;
+    }
+
+    uint32_t change = Local<Integer>::Cast(args[1])->Value();
+
+    NativeString collection(args.GetIsolate(), args[2]);
+    if (collection.isInvalid(args)) {
+        return;
+    }
+
+    uint32_t value = kvStoreInteger[std::string(collection.getString())][std::string(key.getString())] += change;
+
+    args.GetReturnValue().Set(Integer::New(args.GetIsolate(), value));
+}
+
+/* This one will spike memory usage for large stores */
+void uWS_getStringKeys(const FunctionCallbackInfo<Value> &args) {
+
+    NativeString collection(args.GetIsolate(), args[0]);
+    if (collection.isInvalid(args)) {
+        return;
+    }
+
+    Local<Array> stringKeys = Array::New(args.GetIsolate(), kvStoreString.size());
+
+    int offset = 0;
+
+    for (auto p : kvStoreString[std::string(collection.getString())]) {
+        stringKeys->Set(args.GetIsolate()->GetCurrentContext(), offset++, String::NewFromUtf8(args.GetIsolate(), p.first.data(), NewStringType::kNormal, p.first.length()).ToLocalChecked());
+    }
+
+    args.GetReturnValue().Set(stringKeys);
+}
+
+void uWS_getIntegerKeys(const FunctionCallbackInfo<Value> &args) {
+
+    NativeString collection(args.GetIsolate(), args[0]);
+    if (collection.isInvalid(args)) {
+        return;
+    }
+
+    Local<Array> integerKeys = Array::New(args.GetIsolate(), kvStoreInteger.size());
+
+    int offset = 0;
+
+    for (auto p : kvStoreInteger[std::string(collection.getString())]) {
+        integerKeys->Set(args.GetIsolate()->GetCurrentContext(), offset++, String::NewFromUtf8(args.GetIsolate(), p.first.data(), NewStringType::kNormal, p.first.length()).ToLocalChecked());
+    }
+
+    args.GetReturnValue().Set(integerKeys);
+}
+
+void uWS_deleteString(const FunctionCallbackInfo<Value> &args) {
+
+    NativeString key(args.GetIsolate(), args[0]);
+    if (key.isInvalid(args)) {
+        return;
+    }
+
+    NativeString collection(args.GetIsolate(), args[1]);
+    if (collection.isInvalid(args)) {
+        return;
+    }
+
+    kvStoreString[std::string(collection.getString())].erase(std::string(key.getString()));
+
+    //args.GetReturnValue().Set(Integer::New(args.GetIsolate(), value));
+}
+
+void uWS_deleteInteger(const FunctionCallbackInfo<Value> &args) {
+
+    NativeString key(args.GetIsolate(), args[0]);
+    if (key.isInvalid(args)) {
+        return;
+    }
+
+    NativeString collection(args.GetIsolate(), args[1]);
+    if (collection.isInvalid(args)) {
+        return;
+    }
+
+    kvStoreInteger[std::string(collection.getString())].erase(std::string(key.getString()));
+
+    //args.GetReturnValue().Set(Integer::New(args.GetIsolate(), value));
+}
+
+void uWS_deleteStringCollection(const FunctionCallbackInfo<Value> &args) {
+
+    NativeString collection(args.GetIsolate(), args[0]);
+    if (collection.isInvalid(args)) {
+        return;
+    }
+
+    kvStoreString.erase(std::string(collection.getString()));
+
+    //args.GetReturnValue().Set(integerKeys);
+}
+
+void uWS_deleteIntegerCollection(const FunctionCallbackInfo<Value> &args) {
+
+    NativeString collection(args.GetIsolate(), args[0]);
+    if (collection.isInvalid(args)) {
+        return;
+    }
+
+    kvStoreInteger.erase(std::string(collection.getString()));
+
+    //args.GetReturnValue().Set(integerKeys);
+}
+
+void uWS_lock(const FunctionCallbackInfo<Value> &args) {
+    kvMutex.lock();
+}
+
+void uWS_unlock(const FunctionCallbackInfo<Value> &args) {
+    kvMutex.unlock();
+}
+
 void Main(Local<Object> exports) {
 
     /* We only care if it is defined, not what it says */
@@ -121,6 +318,21 @@ void Main(Local<Object> exports) {
     exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "SSLApp", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_App<uWS::SSLApp>, externalPerContextData)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
     exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "free", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_free, externalPerContextData)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
 
+    /* Temporary KV store */
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "getString", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_getString)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "setString", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_setString)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "getInteger", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_getInteger)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "setInteger", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_setInteger)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "incInteger", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_incInteger)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "lock", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_lock)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "unlock", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_unlock)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "getIntegerKeys", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_getIntegerKeys)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "getStringKeys", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_getStringKeys)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "deleteString", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_deleteString)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "deleteInteger", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_deleteInteger)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "deleteStringCollection", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_deleteStringCollection)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+    exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "deleteIntegerCollection", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_deleteIntegerCollection)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
+
     /* Expose some µSockets functions directly under uWS namespace */
     exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "us_listen_socket_close", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, uWS_us_listen_socket_close)->GetFunction(isolate->GetCurrentContext()).ToLocalChecked()).ToChecked();
 
@@ -136,8 +348,6 @@ void Main(Local<Object> exports) {
     exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR_64KB", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR_64KB)).ToChecked();
     exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR_128KB", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR_128KB)).ToChecked();
     exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "DEDICATED_COMPRESSOR_256KB", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, uWS::DEDICATED_COMPRESSOR_256KB)).ToChecked();
-
-
 
     /* Listen options */
     exports->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "LIBUS_LISTEN_EXCLUSIVE_PORT", NewStringType::kNormal).ToLocalChecked(), Integer::NewFromUnsigned(isolate, LIBUS_LISTEN_EXCLUSIVE_PORT)).ToChecked();

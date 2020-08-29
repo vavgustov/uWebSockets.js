@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>WebSocketBehavior | uWebSockets.js v17.3.0 documentation</title>
-	<meta name="description" content="">
+	<title>WebSocketBehavior | uWebSockets.js v18.1.0 documentation</title>
+	<meta name="description" content="Documentation for uWebSockets.js v18.1.0 documentation">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
 </head>
@@ -13,7 +13,7 @@
 	<div class="tsd-page-toolbar">
 		<div class="container">
 			<div class="table-wrap">
-				<div class="table-cell" id="tsd-search" data-index="../assets/js/search.js" data-base="..">
+				<div class="table-cell" id="tsd-search" data-index="../assets/js/search.json" data-base="..">
 					<div class="field">
 						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
 						<input id="tsd-search-field" type="text" />
@@ -22,7 +22,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../index.html" class="title">uWebSockets.js v17.3.0 documentation</a>
+					<a href="../index.html" class="title">uWebSockets.js v18.1.0 documentation</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -67,7 +67,7 @@
 			<section class="tsd-panel tsd-comment">
 				<div class="tsd-comment tsd-typography">
 					<div class="lead">
-						<p>A structure holding settings and handlers for a WebSocket route handler.</p>
+						<p>A structure holding settings and handlers for a WebSocket URL route handler.</p>
 					</div>
 				</div>
 			</section>
@@ -96,6 +96,7 @@
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="websocketbehavior.html#open" class="tsd-kind-icon">open</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="websocketbehavior.html#ping" class="tsd-kind-icon">ping</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="websocketbehavior.html#pong" class="tsd-kind-icon">pong</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="websocketbehavior.html#upgrade" class="tsd-kind-icon">upgrade</a></li>
 							</ul>
 						</section>
 					</div>
@@ -106,22 +107,22 @@
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
 					<a name="close" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagOptional">Optional</span> close</h3>
-					<div class="tsd-signature tsd-kind-icon">close<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
+					<div class="tsd-signature tsd-kind-icon">close<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a>, code<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, message<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ArrayBuffer</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">void</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f9c3cf4/docs/index.d.ts#L141">index.d.ts:141</a></li>
+							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f35f8c7/docs/index.d.ts#L225">index.d.ts:225</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Handler for close event, no matter if error, timeout or graceful close. You may not use WebSocket after this event.</p>
+							<p>Handler for close event, no matter if error, timeout or graceful close. You may not use WebSocket after this event. Do not send on this WebSocket from within here, it is closed.</p>
 						</div>
 					</div>
 					<div class="tsd-type-declaration">
 						<h4>Type declaration</h4>
 						<ul class="tsd-parameters">
-							<li class="tsd-parameter-siganture">
-								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property tsd-is-not-exported">
+							<li class="tsd-parameter-signature">
+								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property">
 									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a>, code<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, message<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ArrayBuffer</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 								</ul>
 								<ul class="tsd-descriptions">
@@ -151,34 +152,34 @@
 					<div class="tsd-signature tsd-kind-icon">compression<span class="tsd-signature-symbol">:</span> <a href="../index.html#compressoptions" class="tsd-signature-type">CompressOptions</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f9c3cf4/docs/index.d.ts#L131">index.d.ts:131</a></li>
+							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f35f8c7/docs/index.d.ts#L211">index.d.ts:211</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>0 = no compression, 1 = shared compressor, 2 = dedicated compressor. See C++ project.</p>
+							<p>What permessage-deflate compression to use. uWS.DISABLED, uWS.SHARED_COMPRESSOR or any of the uWS.DEDICATED_COMPRESSOR_xxxKB.</p>
 						</div>
 					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
 					<a name="drain" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagOptional">Optional</span> drain</h3>
-					<div class="tsd-signature tsd-kind-icon">drain<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
+					<div class="tsd-signature tsd-kind-icon">drain<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">void</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f9c3cf4/docs/index.d.ts#L139">index.d.ts:139</a></li>
+							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f35f8c7/docs/index.d.ts#L223">index.d.ts:223</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Handler for when WebSocket backpressure drains. Check ws.getBufferedAmount().</p>
+							<p>Handler for when WebSocket backpressure drains. Check ws.getBufferedAmount(). Use this to guide / drive your backpressure throttling.</p>
 						</div>
 					</div>
 					<div class="tsd-type-declaration">
 						<h4>Type declaration</h4>
 						<ul class="tsd-parameters">
-							<li class="tsd-parameter-siganture">
-								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property tsd-is-not-exported">
+							<li class="tsd-parameter-signature">
+								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property">
 									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 								</ul>
 								<ul class="tsd-descriptions">
@@ -202,12 +203,13 @@
 					<div class="tsd-signature tsd-kind-icon">idle<wbr>Timeout<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f9c3cf4/docs/index.d.ts#L129">index.d.ts:129</a></li>
+							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f35f8c7/docs/index.d.ts#L209">index.d.ts:209</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Maximum amount of seconds that may pass without sending or getting a message.</p>
+							<p>Maximum amount of seconds that may pass without sending or getting a message. Connection is closed if this timeout passes. Resolution (granularity) for timeouts are typically 4 seconds, rounded to closest.
+							Disable by leaving 0.</p>
 						</div>
 					</div>
 				</section>
@@ -217,12 +219,12 @@
 					<div class="tsd-signature tsd-kind-icon">max<wbr>Backpressure<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f9c3cf4/docs/index.d.ts#L133">index.d.ts:133</a></li>
+							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f35f8c7/docs/index.d.ts#L213">index.d.ts:213</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Maximum length of allowed backpressure per socket when publishing messages. Slow receivers, WebSockets, will be disconnected if needed.</p>
+							<p>Maximum length of allowed backpressure per socket when PUBLISHING messages (does not apply to ws.send). Slow receivers with too high backpressure will be skipped until they catch up or timeout.</p>
 						</div>
 					</div>
 				</section>
@@ -232,34 +234,34 @@
 					<div class="tsd-signature tsd-kind-icon">max<wbr>Payload<wbr>Length<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f9c3cf4/docs/index.d.ts#L127">index.d.ts:127</a></li>
+							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f35f8c7/docs/index.d.ts#L205">index.d.ts:205</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Maximum length of received message.</p>
+							<p>Maximum length of received message. If a client tries to send you a message larger than this, the connection is immediately closed.</p>
 						</div>
 					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
 					<a name="message" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagOptional">Optional</span> message</h3>
-					<div class="tsd-signature tsd-kind-icon">message<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
+					<div class="tsd-signature tsd-kind-icon">message<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a>, message<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ArrayBuffer</span>, isBinary<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">void</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f9c3cf4/docs/index.d.ts#L137">index.d.ts:137</a></li>
+							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f35f8c7/docs/index.d.ts#L221">index.d.ts:221</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Handler for a WebSocket message.</p>
+							<p>Handler for a WebSocket message. Messages are given as ArrayBuffer no matter if they are binary or not. Given ArrayBuffer is valid during the lifetime of this callback (until first await or return) and will be neutered.</p>
 						</div>
 					</div>
 					<div class="tsd-type-declaration">
 						<h4>Type declaration</h4>
 						<ul class="tsd-parameters">
-							<li class="tsd-parameter-siganture">
-								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property tsd-is-not-exported">
+							<li class="tsd-parameter-signature">
+								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property">
 									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a>, message<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ArrayBuffer</span>, isBinary<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 								</ul>
 								<ul class="tsd-descriptions">
@@ -286,10 +288,10 @@
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
 					<a name="open" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagOptional">Optional</span> open</h3>
-					<div class="tsd-signature tsd-kind-icon">open<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
+					<div class="tsd-signature tsd-kind-icon">open<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">void</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f9c3cf4/docs/index.d.ts#L135">index.d.ts:135</a></li>
+							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f35f8c7/docs/index.d.ts#L219">index.d.ts:219</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -300,9 +302,9 @@
 					<div class="tsd-type-declaration">
 						<h4>Type declaration</h4>
 						<ul class="tsd-parameters">
-							<li class="tsd-parameter-siganture">
-								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property tsd-is-not-exported">
-									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a>, req<span class="tsd-signature-symbol">: </span><a href="httprequest.html" class="tsd-signature-type">HttpRequest</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+							<li class="tsd-parameter-signature">
+								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property">
+									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 								</ul>
 								<ul class="tsd-descriptions">
 									<li class="tsd-description">
@@ -310,9 +312,6 @@
 										<ul class="tsd-parameters">
 											<li>
 												<h5>ws: <a href="websocket.html" class="tsd-signature-type">WebSocket</a></h5>
-											</li>
-											<li>
-												<h5>req: <a href="httprequest.html" class="tsd-signature-type">HttpRequest</a></h5>
 											</li>
 										</ul>
 										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
@@ -325,22 +324,22 @@
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
 					<a name="ping" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagOptional">Optional</span> ping</h3>
-					<div class="tsd-signature tsd-kind-icon">ping<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
+					<div class="tsd-signature tsd-kind-icon">ping<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">void</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f9c3cf4/docs/index.d.ts#L143">index.d.ts:143</a></li>
+							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f35f8c7/docs/index.d.ts#L227">index.d.ts:227</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Handler for received ping control message.</p>
+							<p>Handler for received ping control message. You do not need to handle this, pong messages are automatically sent as per the standard.</p>
 						</div>
 					</div>
 					<div class="tsd-type-declaration">
 						<h4>Type declaration</h4>
 						<ul class="tsd-parameters">
-							<li class="tsd-parameter-siganture">
-								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property tsd-is-not-exported">
+							<li class="tsd-parameter-signature">
+								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property">
 									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 								</ul>
 								<ul class="tsd-descriptions">
@@ -361,10 +360,10 @@
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
 					<a name="pong" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagOptional">Optional</span> pong</h3>
-					<div class="tsd-signature tsd-kind-icon">pong<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
+					<div class="tsd-signature tsd-kind-icon">pong<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">void</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f9c3cf4/docs/index.d.ts#L145">index.d.ts:145</a></li>
+							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f35f8c7/docs/index.d.ts#L229">index.d.ts:229</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -375,8 +374,8 @@
 					<div class="tsd-type-declaration">
 						<h4>Type declaration</h4>
 						<ul class="tsd-parameters">
-							<li class="tsd-parameter-siganture">
-								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property tsd-is-not-exported">
+							<li class="tsd-parameter-signature">
+								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property">
 									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>ws<span class="tsd-signature-symbol">: </span><a href="websocket.html" class="tsd-signature-type">WebSocket</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 								</ul>
 								<ul class="tsd-descriptions">
@@ -385,6 +384,49 @@
 										<ul class="tsd-parameters">
 											<li>
 												<h5>ws: <a href="websocket.html" class="tsd-signature-type">WebSocket</a></h5>
+											</li>
+										</ul>
+										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="upgrade" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> upgrade</h3>
+					<div class="tsd-signature tsd-kind-icon">upgrade<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>res<span class="tsd-signature-symbol">: </span><a href="httpresponse.html" class="tsd-signature-type">HttpResponse</a>, req<span class="tsd-signature-symbol">: </span><a href="httprequest.html" class="tsd-signature-type">HttpRequest</a>, context<span class="tsd-signature-symbol">: </span><a href="us_socket_context_t.html" class="tsd-signature-type">us_socket_context_t</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">void</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/uNetworking/uWebSockets.js/blob/f35f8c7/docs/index.d.ts#L217">index.d.ts:217</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Upgrade handler used to intercept HTTP upgrade requests and potentially upgrade to WebSocket.
+							See UpgradeAsync and UpgradeSync example files.</p>
+						</div>
+					</div>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-signature">
+								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property">
+									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>res<span class="tsd-signature-symbol">: </span><a href="httpresponse.html" class="tsd-signature-type">HttpResponse</a>, req<span class="tsd-signature-symbol">: </span><a href="httprequest.html" class="tsd-signature-type">HttpRequest</a>, context<span class="tsd-signature-symbol">: </span><a href="us_socket_context_t.html" class="tsd-signature-type">us_socket_context_t</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+								</ul>
+								<ul class="tsd-descriptions">
+									<li class="tsd-description">
+										<h4 class="tsd-parameters-title">Parameters</h4>
+										<ul class="tsd-parameters">
+											<li>
+												<h5>res: <a href="httpresponse.html" class="tsd-signature-type">HttpResponse</a></h5>
+											</li>
+											<li>
+												<h5>req: <a href="httprequest.html" class="tsd-signature-type">HttpRequest</a></h5>
+											</li>
+											<li>
+												<h5>context: <a href="us_socket_context_t.html" class="tsd-signature-type">us_socket_context_t</a></h5>
 											</li>
 										</ul>
 										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
@@ -456,6 +498,9 @@
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
 								<a href="websocketbehavior.html#pong" class="tsd-kind-icon">pong</a>
 							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="websocketbehavior.html#upgrade" class="tsd-kind-icon">upgrade</a>
+							</li>
 						</ul>
 					</li>
 				</ul>
@@ -463,14 +508,14 @@
 					<li class=" tsd-kind-interface">
 						<a href="us_listen_socket.html" class="tsd-kind-icon">us_<wbr>listen_<wbr>socket</a>
 					</li>
+					<li class=" tsd-kind-interface">
+						<a href="us_socket_context_t.html" class="tsd-kind-icon">us_<wbr>socket_<wbr>context_<wbr>t</a>
+					</li>
 					<li class=" tsd-kind-type-alias">
 						<a href="../index.html#compressoptions" class="tsd-kind-icon">Compress<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-type-alias">
 						<a href="../index.html#recognizedstring" class="tsd-kind-icon">Recognized<wbr>String</a>
-					</li>
-					<li class=" tsd-kind-variable">
-						<a href="../index.html#dedicated_compressor" class="tsd-kind-icon">DEDICATED_<wbr>COMPRESSOR</a>
 					</li>
 					<li class=" tsd-kind-variable">
 						<a href="../index.html#dedicated_compressor_128kb" class="tsd-kind-icon">DEDICATED_<wbr>COMPRESSOR_<wbr>128KB</a>
@@ -521,57 +566,8 @@
 		<h2>Legend</h2>
 		<div class="tsd-legend-group">
 			<ul class="tsd-legend">
-				<li class="tsd-kind-module"><span class="tsd-kind-icon">Module</span></li>
-				<li class="tsd-kind-object-literal"><span class="tsd-kind-icon">Object literal</span></li>
-				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
-				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
-				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
-				<li class="tsd-kind-index-signature"><span class="tsd-kind-icon">Index signature</span></li>
-				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
-				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
-				<li class="tsd-kind-enum-member"><span class="tsd-kind-icon">Enumeration member</span></li>
-				<li class="tsd-kind-property tsd-parent-kind-enum"><span class="tsd-kind-icon">Property</span></li>
-				<li class="tsd-kind-method tsd-parent-kind-enum"><span class="tsd-kind-icon">Method</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
-				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
-				<li class="tsd-kind-constructor tsd-parent-kind-interface"><span class="tsd-kind-icon">Constructor</span></li>
 				<li class="tsd-kind-property tsd-parent-kind-interface"><span class="tsd-kind-icon">Property</span></li>
 				<li class="tsd-kind-method tsd-parent-kind-interface"><span class="tsd-kind-icon">Method</span></li>
-				<li class="tsd-kind-index-signature tsd-parent-kind-interface"><span class="tsd-kind-icon">Index signature</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
-				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
-				<li class="tsd-kind-constructor tsd-parent-kind-class"><span class="tsd-kind-icon">Constructor</span></li>
-				<li class="tsd-kind-property tsd-parent-kind-class"><span class="tsd-kind-icon">Property</span></li>
-				<li class="tsd-kind-method tsd-parent-kind-class"><span class="tsd-kind-icon">Method</span></li>
-				<li class="tsd-kind-accessor tsd-parent-kind-class"><span class="tsd-kind-icon">Accessor</span></li>
-				<li class="tsd-kind-index-signature tsd-parent-kind-class"><span class="tsd-kind-icon">Index signature</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited constructor</span></li>
-				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited property</span></li>
-				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited method</span></li>
-				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited accessor</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected property</span></li>
-				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected method</span></li>
-				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected accessor</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private property</span></li>
-				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private method</span></li>
-				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private accessor</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static property</span></li>
-				<li class="tsd-kind-call-signature tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static method</span></li>
 			</ul>
 		</div>
 	</div>
