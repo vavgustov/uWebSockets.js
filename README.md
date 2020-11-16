@@ -4,14 +4,16 @@
 <br><br>
 
 
-<a href="https://github.com/uNetworking/uWebSockets.js/releases"><img src="https://img.shields.io/github/v/release/uNetworking/uWebSockets.js"></a> <a href="https://lgtm.com/projects/g/uNetworking/uWebSockets.js/context:cpp"><img alt="Language grade: C/C++" src="https://img.shields.io/lgtm/grade/cpp/g/uNetworking/uWebSockets.js.svg?logo=lgtm&logoWidth=18"/></a> <img src="https://img.shields.io/badge/downloads-50,000,000+-green" />
+<a href="https://github.com/uNetworking/uWebSockets.js/releases"><img src="https://img.shields.io/github/v/release/uNetworking/uWebSockets.js"></a> <a href="https://lgtm.com/projects/g/uNetworking/uWebSockets.js/context:cpp"><img alt="Language grade: C/C++" src="https://img.shields.io/lgtm/grade/cpp/g/uNetworking/uWebSockets.js.svg?logo=lgtm&logoWidth=18"/></a> <img src="https://img.shields.io/badge/downloads-55%20million-pink" />
+
+[A note on speculation, lies & allegations](https://medium.com/@alexhultman/beware-of-tin-foil-hattery-f738b620468c)
 
 </div>
 <br><br>
 
-### :bulb: Familiar face
+### :bulb: Quite simple
 
-µWebSockets.js is a C++ implementation of the Http/WebSocket protocols for Node.js, easy to use from JavaScript. Think of it as a faster Express.js/Socket.IO alternative; it comes with both router and pub/sub support. Browse the [documentation](https://unetworking.github.io/uWebSockets.js/generated/) and see the [main repo](https://github.com/uNetworking/uWebSockets). There are tons of [examples](examples) but here's the gist of it all:
+µWebSockets.js is a C++ implementation of the WebSocket/HTTP protocols for Node.js, easy to use from JavaScript. Think of it as a **much** faster alternative to both Socket.IO and Fastify/Express.js; it comes with both router and pub/sub support. Browse the [documentation](https://unetworking.github.io/uWebSockets.js/generated/) and see the [main repo](https://github.com/uNetworking/uWebSockets). There are tons of [examples](examples) but here's the gist of it all:
 
 ```javascript
 /* Non-SSL is simply App() */
@@ -57,12 +59,15 @@ Being written in native code directly targeting the Linux kernel makes it way fa
 
 ![](misc/chart.png)
 
-### :package: Install anywhere
+### :crossed_swords: Battle proven
+Runs the trading APIs of [Bitfinex.com](https://bitfinex.com), handling volumes of ~170 million USD every day. Also runs [Trello](https://trello.com), serving their 50 million users with real-time board updates.
 
-Install with `npm install uNetworking/uWebSockets.js#v18.4.0` or any such release. No compiler needed.
+### :package: Easily installed
 
-* Runs on Linux (x64, ARM64), macOS (x64) and Windows (x64). Node.js 10, 11, 12, 13 & 14.
-* Installs from this GitHub repo, not the NPM registry. Production apps should rely on their own local copy.
+Install with `npm install uNetworking/uWebSockets.js#v18.8.0` or any such [release](https://github.com/uNetworking/uWebSockets.js/releases). No compiler needed.
+
+* Runs on Linux, macOS and Windows (ARM64, x64). Node.js 10, 11, 12, 13, 14 & 15.
+* Installs from this GitHub repository, not the NPM registry; [hit "fork" to get your own copy](https://medium.com/@alexhultman/beware-of-tin-foil-hattery-f738b620468c).
 
 ### :briefcase: Commercially supported
 <a href="https://github.com/uNetworking">uNetworking AB</a> is a Swedish consulting & contracting company dealing with anything related to µWebSockets; development, support and customer success.
@@ -73,4 +78,10 @@ Special thanks to BitMEX, Bitfinex, Google, Coinbase, Bitwyre and deepstreamHub 
 
 <img src="https://github.com/uNetworking/uWebSockets/raw/master/misc/2018.png" />
 
-* µWebSockets.js is the Node.js binding to µWebSockets. Read more over at [µWebSockets](https://github.com/uNetworking/uWebSockets).
+### :family: A family
+µWebSockets.js is the Node.js integration of [µWebSockets](https://github.com/uNetworking/uWebSockets); the standalone C++ project. If performance is of utter importance, you don't necessarily have to use JavaScript/Node.js but could write apps in C++ using µWebSockets directly. It works exactly the same way, and will offer unbeatable performance for those highly demanding applications. Either way - the two projects both follow the same security testing, compliance testing and receive the same bug fixes and features. They are part of the same family.
+
+### :handshake: Permissively licensed
+Intellectual property, all rights reserved.
+
+Where such explicit notice is given, source code is licensed Apache License 2.0 which is a permissive OSI-approved license with very few limitations. Modified "forks" should be of nothing but licensed source code, and be made available under another product name. If you're uncertain about any of this, please ask before assuming.
